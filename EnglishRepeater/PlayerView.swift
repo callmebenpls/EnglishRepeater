@@ -284,6 +284,18 @@ struct PlayerView: View {
             }
             .disabled(vm.duration == 0)
 
+            Button(action: { vm.toggleRepeatSentence() }) {
+                Image(systemName: vm.loopingSegmentIndex != nil ? "repeat.1.circle.fill" : "repeat.1")
+                    .foregroundStyle(vm.loopingSegmentIndex != nil ? .blue : .secondary)
+            }
+            .disabled(vm.duration == 0 || vm.segments.isEmpty)
+
+            Button(action: { vm.speakLastSentence() }) {
+                Image(systemName: vm.isRespeaking ? "speaker.wave.3.fill" : "text.bubble")
+                    .foregroundStyle(vm.isRespeaking ? .blue : .secondary)
+            }
+            .disabled(vm.duration == 0 || vm.segments.isEmpty)
+
             Rectangle()
                 .fill(Color(.systemGray4))
                 .frame(width: 0.5, height: 24)

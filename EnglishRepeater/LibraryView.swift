@@ -34,7 +34,7 @@ struct LibraryView: View {
             }
             .fileImporter(
                 isPresented: $showFilePicker,
-                allowedContentTypes: [.audio, .plainText],
+                allowedContentTypes: [.audio, .plainText, UTType(filenameExtension: "lrc") ?? .data],
                 allowsMultipleSelection: true
             ) { result in
                 if case .success(let urls) = result {
