@@ -4,6 +4,10 @@ struct SettingsView: View {
     @EnvironmentObject var vm: PlayerViewModel
     @Environment(\.dismiss) private var dismiss
 
+    @State private var testing = false
+    @State private var testStatus: String?
+    @State private var testOK = false
+
     var body: some View {
         NavigationStack {
             Form {
@@ -54,6 +58,8 @@ struct SettingsView: View {
                         Text(vm.keyMapping.triplePress.displayName)
                     }
                 }
+
+                aiSection
             }
             .navigationTitle("按键设置")
             .navigationBarTitleDisplayMode(.inline)
@@ -61,6 +67,65 @@ struct SettingsView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("完成") { dismiss() }
                 }
+            }
+        }
+    }
+
+    // MARK: - AI Section
+
+    private var aiSection: some View {
+        Section {
+            TextField("Base URL", text: configBinding(\.baseURL))
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+            SecureField("API Key", text: configBinding(\.apiKey))
+            TextField("模型", text: configBinding(\.model))
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+
+            Button(action: runTest) {
+                HStack {
+                    Text("测试连接")
+                    Spacer()
+                    if testing {
+                        ProgressView()
+                    } else if let status = testStatus {
+                        Text(status)
+                            .font(.caption)
+                            .foregroundStyle(testOK ? .green : .red)
+                    }
+                }
+            }
+            .disabled(testing)
+        } header: {
+            Text("AI 听力解析")
+        } footer: {
+            Text("把当前句的音频发给 AI,它会听并讲解(默认 OpenAI gpt-4o-audio-preview)。把此动作映射到耳机按键,或用播放页的 AI 按钮触发。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func configBinding(_ keyPath: WritableKeyPath<AIConfig, String>) -> Binding<String> {
+        Binding(
+            get: { vm.aiExplainer.config[keyPath: keyPath] },
+            set: { vm.aiExplainer.config[keyPath: keyPath] = $0 }
+        )
+    }
+
+    private func runTest() {
+        testing = true
+        testStatus = nil
+        vm.aiExplainer.testConnection { result in
+            testing = false
+            switch result {
+            case .success:
+                testOK = true
+                testStatus = "连接成功 ✓"
+            case .failure(let error):
+                testOK = false
+                testStatus = (error as? LocalizedError)?.errorDescription ?? "失败"
             }
         }
     }

@@ -16,7 +16,10 @@ struct LibraryView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
+            VStack(spacing: 0) {
+                // Observe the stats object directly so minute-bumps re-render the card
+                // (changes inside a nested @Published don't propagate via the outer VM).
+                StatsCardContainer(stats: vm.stats)
                 if vm.library.isEmpty {
                     emptyState
                 } else {
@@ -157,4 +160,67 @@ struct LibraryView: View {
 #Preview {
     LibraryView(selectedTab: .constant(0))
         .environmentObject(PlayerViewModel())
+}
+
+// MARK: - Stats Card
+
+/// Thin observer wrapper. `@ObservedObject` here ensures the card re-renders when the
+/// nested `ListeningStats` publishes, which the parent view-model's `@Published` chain
+/// would otherwise drop.
+private struct StatsCardContainer: View {
+    @ObservedObject var stats: ListeningStats
+    var body: some View {
+        StatsCard(todayMinutes: stats.todayMinutes, totalMinutes: stats.totalMinutes)
+    }
+}
+
+/// "TODAY · TOTAL" listening-time card. Bordered material card; ultra-light numbers,
+/// caption labels above, "min" under. When today = 0, that column dims (the eye glides
+/// past to the lifetime total).
+private struct StatsCard: View {
+    let todayMinutes: Int
+    let totalMinutes: Int
+
+    var body: some View {
+        HStack(spacing: 0) {
+            column(label: "TODAY", value: todayMinutes, dim: todayMinutes == 0)
+            Text("·")
+                .font(.system(size: 28, weight: .ultraLight))
+                .foregroundStyle(.tertiary)
+                .padding(.bottom, 18)   // visually align with the numbers, not the labels
+            column(label: "TOTAL", value: totalMinutes, dim: false)
+        }
+        .padding(.vertical, 20)
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.regularMaterial)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color(.separator), lineWidth: 0.5)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+    }
+
+    private func column(label: String, value: Int, dim: Bool) -> some View {
+        VStack(spacing: 6) {
+            Text(label)
+                .font(.caption2)
+                .tracking(1.4)
+                .foregroundStyle(.secondary)
+            Text("\(value)")
+                .font(.system(size: 52, weight: .thin, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.primary)
+                .opacity(dim ? 0.3 : 1.0)
+            Text("min")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .opacity(dim ? 0.5 : 1.0)
+        }
+        .frame(maxWidth: .infinity)
+    }
 }

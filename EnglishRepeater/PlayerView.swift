@@ -41,6 +41,14 @@ struct PlayerView: View {
                 SettingsView()
                     .environmentObject(vm)
             }
+            .sheet(isPresented: Binding(
+                get: { vm.aiState != .idle },
+                set: { if !$0 { vm.cancelAI() } }
+            )) {
+                AIExplainSheet()
+                    .environmentObject(vm)
+                    .presentationDetents([.medium])
+            }
         }
     }
 
@@ -290,9 +298,9 @@ struct PlayerView: View {
             }
             .disabled(vm.duration == 0 || vm.segments.isEmpty)
 
-            Button(action: { vm.speakLastSentence() }) {
-                Image(systemName: vm.isRespeaking ? "speaker.wave.3.fill" : "text.bubble")
-                    .foregroundStyle(vm.isRespeaking ? .blue : .secondary)
+            Button(action: { vm.aiExplain() }) {
+                Image(systemName: vm.aiState == .idle ? "sparkles" : "sparkles.rectangle.stack.fill")
+                    .foregroundStyle(vm.aiState == .idle ? Color.secondary : Color.blue)
             }
             .disabled(vm.duration == 0 || vm.segments.isEmpty)
 
@@ -340,4 +348,96 @@ struct PlayerView: View {
 #Preview {
     PlayerView()
         .environmentObject(PlayerViewModel())
+}
+
+// MARK: - AI Explain Sheet
+
+/// Shown while the AI listens and explains the current sentence. Purely visual — the
+/// audio experience (slow-loop while waiting, then the spoken explanation) is driven by
+/// the view model and works with the screen locked.
+struct AIExplainSheet: View {
+    @EnvironmentObject var vm: PlayerViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Label("AI 听力解析", systemImage: "sparkles")
+                    .font(.headline)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            switch vm.aiState {
+            case .preparing, .waiting:
+                waiting
+            case .speaking(let text, let pending):
+                speaking(text: text, pending: pending)
+            case .error(let message):
+                errorView(message)
+            case .idle:
+                EmptyView()
+            }
+
+            Spacer()
+        }
+        .padding(20)
+        .presentationDragIndicator(.visible)
+    }
+
+    private var waiting: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                ProgressView()
+                Text("AI 正在听这一句…")
+                    .foregroundStyle(.secondary)
+            }
+            Text("正在以 0.6× 慢速循环这一句,你可以先自己听听看。AI 一回复就会念给你听。")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Button(role: .cancel) { vm.cancelAI() } label: {
+                Text("取消").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .padding(.top, 4)
+        }
+    }
+
+    private func speaking(text: String, pending: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: pending ? "hourglass" : "speaker.wave.2.fill")
+                    .foregroundStyle(.blue)
+                Text(pending ? "即将播放讲解…" : "正在讲解")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            ScrollView {
+                Text(text.isEmpty ? "（语音讲解中）" : text)
+                    .font(.body)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            }
+        }
+    }
+
+    private func errorView(_ message: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(message, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.red)
+            HStack {
+                Button { vm.aiExplain() } label: {
+                    Text("重试").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                Button(role: .cancel) { dismiss() } label: {
+                    Text("关闭").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+    }
 }

@@ -11,12 +11,12 @@ enum ButtonAction: Codable, Hashable, Equatable {
     case skipBack(seconds: Int)
     case skipForward(seconds: Int)
     case repeatSentence
-    case speakLastSentence
+    case aiExplain
 
     static let allCases: [ButtonAction] = [
         .none,
         .togglePlay,
-        .speakLastSentence,
+        .aiExplain,
         .repeatSentence,
         .skipBack(seconds: 3),
         .skipBack(seconds: 5),
@@ -34,7 +34,7 @@ enum ButtonAction: Codable, Hashable, Equatable {
         switch self {
         case .none:                return "无动作"
         case .togglePlay:          return "暂停 / 播放"
-        case .speakLastSentence:   return "清晰重读上一句"
+        case .aiExplain:           return "AI 听这句并讲解"
         case .repeatSentence:      return "循环当前句"
         case .skipBack(let s):     return "后退 \(s) 秒"
         case .skipForward(let s):  return "前进 \(s) 秒"
@@ -43,18 +43,18 @@ enum ButtonAction: Codable, Hashable, Equatable {
 
     private enum CodingKeys: String, CodingKey { case type, seconds }
     private enum ActionType: String, Codable {
-        case none, togglePlay, skipBack, skipForward, repeatSentence, speakLastSentence
+        case none, togglePlay, skipBack, skipForward, repeatSentence, aiExplain
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         switch try c.decode(ActionType.self, forKey: .type) {
-        case .none:              self = .none
-        case .togglePlay:        self = .togglePlay
-        case .repeatSentence:    self = .repeatSentence
-        case .speakLastSentence: self = .speakLastSentence
-        case .skipBack:          self = .skipBack(seconds: try c.decode(Int.self, forKey: .seconds))
-        case .skipForward:       self = .skipForward(seconds: try c.decode(Int.self, forKey: .seconds))
+        case .none:           self = .none
+        case .togglePlay:     self = .togglePlay
+        case .repeatSentence: self = .repeatSentence
+        case .aiExplain:      self = .aiExplain
+        case .skipBack:       self = .skipBack(seconds: try c.decode(Int.self, forKey: .seconds))
+        case .skipForward:    self = .skipForward(seconds: try c.decode(Int.self, forKey: .seconds))
         }
     }
 
@@ -64,7 +64,7 @@ enum ButtonAction: Codable, Hashable, Equatable {
         case .none:          try c.encode(ActionType.none, forKey: .type)
         case .togglePlay:    try c.encode(ActionType.togglePlay, forKey: .type)
         case .repeatSentence: try c.encode(ActionType.repeatSentence, forKey: .type)
-        case .speakLastSentence: try c.encode(ActionType.speakLastSentence, forKey: .type)
+        case .aiExplain:     try c.encode(ActionType.aiExplain, forKey: .type)
         case .skipBack(let s):   try c.encode(ActionType.skipBack, forKey: .type); try c.encode(s, forKey: .seconds)
         case .skipForward(let s): try c.encode(ActionType.skipForward, forKey: .type); try c.encode(s, forKey: .seconds)
         }
@@ -95,14 +95,23 @@ final class PlayerViewModel: NSObject, ObservableObject {
     @Published var subtitleProgress = ""
     /// Index into `segments` of the sentence currently being looped, or nil if not looping.
     @Published var loopingSegmentIndex: Int?
-    /// True while the clear-voice re-speak of a sentence is playing.
-    @Published var isRespeaking = false
+    /// Drives the AI-explain UI (button, sheet, indicators).
+    @Published var aiState: AIExplainState = .idle
 
     private var player: AVAudioPlayer?
     private var timer: Timer?
     private let commandCenter = MPRemoteCommandCenter.shared()
     private var cancellables = Set<AnyCancellable>()
-    private let speechReader = SpeechReader()
+    let aiExplainer = AIExplainer()
+    let stats = ListeningStats()
+    private let cueSynth = AVSpeechSynthesizer()
+    private var aiVoicePlayer: AVAudioPlayer?
+    private var aiVoiceStartedAt: Date?
+
+    // AI-explain in-flight bookkeeping
+    private var aiSegment: Segment?
+    private var aiPendingAudio: Data?       // explanation audio waiting for a loop boundary
+    private var aiRateBeforeWait: Float = 1.0
 
     override init() {
         super.init()
@@ -149,6 +158,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
     @objc private func persistProgressNow() {
         saveProgress()
         saveLibrary()   // synchronous write — bypass the debounced auto-save
+        stats.flush()
     }
 
     // MARK: - Audio Session
@@ -282,8 +292,14 @@ final class PlayerViewModel: NSObject, ObservableObject {
         currentTime = 0
         duration = 0
         loopingSegmentIndex = nil
-        speechReader.stop()
-        isRespeaking = false
+        aiExplainer.cancel()
+        cueSynth.stopSpeaking(at: .immediate)
+        recordAIVoiceTime()
+        aiVoicePlayer?.stop()
+        aiVoicePlayer = nil
+        aiPendingAudio = nil
+        aiSegment = nil
+        aiState = .idle
         stopTimer()
     }
 
@@ -522,11 +538,28 @@ final class PlayerViewModel: NSObject, ObservableObject {
             guard let self, let player = self.player else { return }
             self.currentTime = player.currentTime
 
+            // Count this 0.25s as listening time whenever audio is genuinely playing.
+            // The slow-loop wait state is included because the user is still hearing the
+            // sentence; the only thing the main timer excludes is paused state.
+            if player.isPlaying {
+                self.stats.record(seconds: 0.25)
+            }
+
             // Sentence-loop: jump back to the sentence start when it ends.
             if let li = self.loopingSegmentIndex, li < self.segments.count {
                 let seg = self.segments[li]
                 let end = seg.start + seg.duration
                 if player.currentTime >= end - 0.04 || player.currentTime < seg.start - 0.5 {
+                    // If an AI explanation arrived during the wait, play it at the boundary
+                    // instead of looping again — avoids cutting a word mid-flow.
+                    if let pending = self.aiPendingAudio {
+                        self.aiPendingAudio = nil
+                        if case .speaking(let t, _) = self.aiState {
+                            self.aiState = .speaking(text: t, pending: false)
+                        }
+                        self.startAIPlayback(pending)
+                        return
+                    }
                     player.currentTime = seg.start
                     self.currentTime = seg.start
                 }
@@ -596,54 +629,212 @@ final class PlayerViewModel: NSObject, ObservableObject {
         case .none:                    break
         case .togglePlay:              togglePlay()
         case .repeatSentence:          toggleRepeatSentence()
-        case .speakLastSentence:       speakLastSentence()
+        case .aiExplain:               aiExplain()
         case .skipBack(let seconds):   skip(by: -Double(seconds))
         case .skipForward(let seconds): skip(by: Double(seconds))
         }
     }
 
-    // MARK: - Re-speak Last Sentence
+    // MARK: - AI Explain (audio-in)
 
-    /// Hands-free catch-up: pause the audio, re-speak the current sentence clearly with
-    /// on-device TTS, then replay that original sentence and continue forward.
-    func speakLastSentence() {
-        // A second trigger while speaking acts as an interrupt: stop and resume.
-        if isRespeaking {
-            speechReader.stop()
-            isRespeaking = false
-            if !isPlaying { play() }
+    /// Send the current sentence's audio to the AI, which listens and explains it.
+    /// While waiting, the sentence slow-loops at 0.6x so the user can keep listening.
+    /// Pressing again at any stage cancels and returns to normal playback.
+    func aiExplain() {
+        // Any press while busy acts as a cancel.
+        switch aiState {
+        case .idle, .error:
+            break
+        case .preparing, .waiting, .speaking:
+            cancelAI()
             return
         }
 
+        guard aiExplainer.isConfigured else {
+            aiState = .error("请先在设置里填入 AI 接口和密钥")
+            speakCue("AI is not set up yet.")
+            return
+        }
         guard !segments.isEmpty, let idx = currentSegmentIndex() else {
-            announceNoTranscript()
-            return
-        }
-        let seg = segments[idx]
-        let text = seg.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else {
-            announceNoTranscript()
+            aiState = .error("这一段没有字幕,无法解析")
+            speakCue("No transcript here.")
             return
         }
 
-        pause()
-        isRespeaking = true
-        speechReader.speak(text) { [weak self] in
+        let seg = segments[idx]
+        let sentence = seg.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        aiSegment = seg
+        aiPendingAudio = nil
+        aiState = .preparing
+
+        // Cache hit → skip the wait entirely.
+        if let cached = aiExplainer.cachedExplanation(for: sentence) {
+            pause()
+            aiState = .speaking(text: cached.text, pending: false)
+            startAIPlayback(cached.audio)
+            return
+        }
+
+        guard let sourceURL = currentItem?.resolvedURL else {
+            failAI("无法读取音频文件")
+            return
+        }
+
+        // Begin the slow-loop from the sentence start while we wait.
+        aiRateBeforeWait = playbackRate
+        loopingSegmentIndex = idx
+        seek(to: seg.start)
+        player?.rate = 0.6
+        if !isPlaying { play() }
+        aiState = .waiting
+
+        extractClip(from: sourceURL, start: seg.start, duration: seg.duration) { [weak self] clip in
             guard let self else { return }
-            self.isRespeaking = false
-            // Replay the original sentence at normal speed, then keep playing forward.
-            self.seek(to: seg.start)
-            self.play()
+            guard case .waiting = self.aiState, let clip else {
+                if self.aiState != .idle { self.failAI("音频裁剪失败") }
+                return
+            }
+            self.aiExplainer.explain(audioClip: clip, sentence: sentence) { [weak self] result in
+                guard let self else { return }
+                guard case .waiting = self.aiState else { return }  // cancelled meanwhile
+                switch result {
+                case .success(let explanation):
+                    // Wait for the next loop boundary so we don't cut a word mid-flow.
+                    self.aiPendingAudio = explanation.audio
+                    self.aiState = .speaking(text: explanation.text, pending: true)
+                case .failure(let error):
+                    self.failAI(self.friendlyError(error))
+                }
+            }
         }
     }
 
-    /// Spoken feedback when there is no transcript to read (screen may be locked).
-    private func announceNoTranscript() {
-        pause()
-        isRespeaking = true
-        speechReader.speak("No transcript for this part yet.") { [weak self] in
-            guard let self else { return }
-            self.isRespeaking = false
+    /// Cancel any in-flight or playing AI explanation and return to normal playback.
+    func cancelAI() {
+        aiExplainer.cancel()
+        cueSynth.stopSpeaking(at: .immediate)
+        recordAIVoiceTime()
+        aiVoicePlayer?.stop()
+        aiVoicePlayer = nil
+        aiPendingAudio = nil
+        loopingSegmentIndex = nil
+        player?.rate = aiRateBeforeWait
+        if let seg = aiSegment { seek(to: seg.start) }
+        aiSegment = nil
+        aiState = .idle
+        if !isPlaying { play() }
+    }
+
+    private func failAI(_ message: String) {
+        loopingSegmentIndex = nil
+        aiPendingAudio = nil
+        player?.rate = aiRateBeforeWait
+        aiState = .error(message)
+        speakCue("Sorry, the A I didn't respond.")
+        // Resume the original sentence so the user isn't left in silence.
+        if let seg = aiSegment { seek(to: seg.start) }
+        if !isPlaying { play() }
+    }
+
+    /// Stop looping, play the AI's spoken explanation, then replay the sentence normally.
+    private func startAIPlayback(_ audio: Data?) {
+        loopingSegmentIndex = nil
+        player?.pause()
+        player?.rate = aiRateBeforeWait
+        isPlaying = false
+
+        guard let audio, let voice = try? AVAudioPlayer(data: audio) else {
+            // No audio came back — just replay the sentence.
+            finishAIAndResume()
+            return
+        }
+        aiVoicePlayer = voice
+        voice.delegate = self
+        aiVoiceStartedAt = Date()
+        voice.play()
+    }
+
+    /// Credit any AI-voice playback time to the stats, then clear the marker.
+    private func recordAIVoiceTime() {
+        if let start = aiVoiceStartedAt {
+            stats.record(seconds: Date().timeIntervalSince(start))
+            aiVoiceStartedAt = nil
+        }
+    }
+
+    /// Called when the AI voice finishes (or had no audio): replay the sentence, continue.
+    private func finishAIAndResume() {
+        recordAIVoiceTime()
+        aiVoicePlayer = nil
+        aiState = .idle
+        if let seg = aiSegment { seek(to: seg.start) }
+        aiSegment = nil
+        play()
+    }
+
+    private func speakCue(_ text: String) {
+        let u = AVSpeechUtterance(string: text)
+        u.voice = AVSpeechSynthesisVoice(language: "en-US")
+        u.rate = 0.46
+        cueSynth.speak(u)
+    }
+
+    private func friendlyError(_ error: Error) -> String {
+        if (error as? URLError)?.code == .timedOut { return "AI 响应超时,请重试" }
+        return "AI 请求失败,请检查网络或密钥"
+    }
+
+    // MARK: - Audio Clip Extraction
+
+    /// Read a small WAV clip for [start, start+duration] (with a little padding so word
+    /// edges aren't clipped). WAV because OpenAI's input_audio accepts wav/mp3, not m4a.
+    /// Returns the clip bytes on the main thread.
+    private func extractClip(from url: URL,
+                             start: TimeInterval,
+                             duration: TimeInterval,
+                             completion: @escaping (Data?) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let accessing = url.startAccessingSecurityScopedResource()
+            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+
+            let outURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString + ".wav")
+            defer { try? FileManager.default.removeItem(at: outURL) }
+
+            do {
+                let src = try AVAudioFile(forReading: url)
+                let format = src.processingFormat
+                let sr = format.sampleRate
+                let total = Double(src.length) / sr
+                let from = max(0, start - 0.15)
+                let len = min(duration + 0.4, max(0, total - from))
+                guard len > 0 else { DispatchQueue.main.async { completion(nil) }; return }
+
+                let frameCount = AVAudioFrameCount(len * sr)
+                guard frameCount > 0,
+                      let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+                    DispatchQueue.main.async { completion(nil) }; return
+                }
+                src.framePosition = AVAudioFramePosition(from * sr)
+                try src.read(into: buffer, frameCount: frameCount)
+
+                let settings: [String: Any] = [
+                    AVFormatIDKey: kAudioFormatLinearPCM,
+                    AVSampleRateKey: sr,
+                    AVNumberOfChannelsKey: format.channelCount,
+                    AVLinearPCMBitDepthKey: 16,
+                    AVLinearPCMIsFloatKey: false,
+                    AVLinearPCMIsBigEndianKey: false
+                ]
+                let out = try AVAudioFile(forWriting: outURL, settings: settings)
+                try out.write(from: buffer)
+
+                let data = try? Data(contentsOf: outURL)
+                DispatchQueue.main.async { completion(data) }
+            } catch {
+                print("Clip extraction error: \(error)")
+                DispatchQueue.main.async { completion(nil) }
+            }
         }
     }
 
@@ -715,6 +906,11 @@ final class PlayerViewModel: NSObject, ObservableObject {
 // MARK: - AVAudioPlayerDelegate
 extension PlayerViewModel: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        // AI explanation voice finished → replay the original sentence and continue.
+        if player === aiVoicePlayer {
+            DispatchQueue.main.async { self.finishAIAndResume() }
+            return
+        }
         DispatchQueue.main.async {
             self.isPlaying = false
             self.currentTime = self.duration
