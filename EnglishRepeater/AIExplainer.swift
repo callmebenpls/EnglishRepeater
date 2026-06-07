@@ -7,7 +7,7 @@ import Foundation
 struct AIConfig: Codable, Equatable {
     var baseURL: String = "https://api.openai.com/v1"
     var apiKey: String = ""
-    var model: String = "gpt-4o-audio-preview"
+    var model: String = "gpt-audio-mini"
 }
 
 // MARK: - Result types
@@ -135,10 +135,15 @@ final class AIExplainer: ObservableObject {
 
         let prompt = """
         You are a friendly English listening coach. Listen to this short clip of fast \
-        natural English. In clear, simple English, tell the learner exactly what is being \
-        said, and point out any words that are reduced, linked, or hard to hear (for \
-        example "going to" sounding like "gonna"). Then finish with ONE short Chinese \
-        sentence giving the meaning. Keep the whole answer under about 25 seconds.
+        natural English and help a Chinese learner who couldn't catch it. In clear, simple \
+        English:
+        1. Say exactly what is being said.
+        2. Point out any words that are reduced, linked, or hard to hear (e.g. "going to" \
+        sounding like "gonna").
+        3. Explain any language a learner might not know — phrasal verbs, slang, idioms, \
+        or fixed expressions — in plain words.
+        Then finish with ONE short Chinese sentence giving the overall meaning. Keep the \
+        whole answer natural and under about 30 seconds.
         """
 
         let body: [String: Any] = [

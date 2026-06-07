@@ -17,6 +17,8 @@
 		B008 /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A009 /* SpeechRecognizer.swift */; };
 		B009 /* AIExplainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A010 /* AIExplainer.swift */; };
 		B010 /* ListeningStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = A011 /* ListeningStats.swift */; };
+		B011 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A012 /* Theme.swift */; };
+		B012 /* Folder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A013 /* Folder.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +34,8 @@
 		A009 /* SpeechRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
 		A010 /* AIExplainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIExplainer.swift; sourceTree = "<group>"; };
 		A011 /* ListeningStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningStats.swift; sourceTree = "<group>"; };
+		A012 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		A013 /* Folder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Folder.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,6 +69,8 @@
 				A009 /* SpeechRecognizer.swift */,
 				A010 /* AIExplainer.swift */,
 				A011 /* ListeningStats.swift */,
+				A012 /* Theme.swift */,
+				A013 /* Folder.swift */,
 				A008 /* Assets.xcassets */,
 				A007 /* Info.plist */,
 			);
@@ -157,6 +163,8 @@
 				B008 /* SpeechRecognizer.swift in Sources */,
 				B009 /* AIExplainer.swift in Sources */,
 				B010 /* ListeningStats.swift in Sources */,
+				B011 /* Theme.swift in Sources */,
+				B012 /* Folder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

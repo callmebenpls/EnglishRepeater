@@ -71,6 +71,28 @@ enum ButtonAction: Codable, Hashable, Equatable {
     }
 }
 
+// MARK: - Subtitle Source
+
+/// Where the currently-shown lyrics came from, so the UI can avoid blindly
+/// re-recognizing audio that already has subtitles.
+enum SubtitleSource: Equatable {
+    case none          // no lyrics yet
+    case lrc           // bonded .lrc file (imported / sibling)
+    case generated     // produced by on-device recognition
+    case plainText     // a plain .txt transcript (no timing)
+
+    var label: String {
+        switch self {
+        case .none:      return "无字幕"
+        case .lrc:       return "已绑定 LRC 字幕"
+        case .generated: return "AI 识别的字幕"
+        case .plainText: return "纯文本字幕"
+        }
+    }
+
+    var hasLyrics: Bool { self != .none }
+}
+
 // MARK: - Key Mapping
 struct KeyMapping: Codable {
     var singlePress: ButtonAction = .skipBack(seconds: 5)
@@ -79,20 +101,37 @@ struct KeyMapping: Codable {
 }
 
 // MARK: - PlayerViewModel
+/// High-frequency playback time, kept in its own tiny observable so the 4×/second clock
+/// updates only re-render the views that actually show time (the lyrics + progress bar) —
+/// not the whole library / player. This is the key perf fix.
+final class PlaybackClock: ObservableObject {
+    @Published var currentTime: TimeInterval = 0
+}
+
 final class PlayerViewModel: NSObject, ObservableObject {
 
     @Published var isPlaying = false
-    @Published var currentTime: TimeInterval = 0
     @Published var duration: TimeInterval = 0
+
+    /// Playback position. Lives on `clock` (separate observable) so updating it 4×/second
+    /// does NOT fire this view model's objectWillChange. Internal code keeps using
+    /// `currentTime` transparently via this forwarding accessor.
+    let clock = PlaybackClock()
+    var currentTime: TimeInterval {
+        get { clock.currentTime }
+        set { clock.currentTime = newValue }
+    }
     @Published var currentFileName = ""
     @Published var keyMapping = KeyMapping()
     @Published var library: [LibraryItem] = []
+    @Published var folders: [Folder] = []
     @Published var currentItem: LibraryItem?
     @Published var displayText = ""
     @Published var playbackRate: Float = 1.0
     @Published var segments: [Segment] = []
     @Published var isGeneratingSubtitles = false
     @Published var subtitleProgress = ""
+    @Published var subtitleSource: SubtitleSource = .none
     /// Index into `segments` of the sentence currently being looped, or nil if not looping.
     @Published var loopingSegmentIndex: Int?
     /// Drives the AI-explain UI (button, sheet, indicators).
@@ -102,6 +141,9 @@ final class PlayerViewModel: NSObject, ObservableObject {
     private var timer: Timer?
     private let commandCenter = MPRemoteCommandCenter.shared()
     private var cancellables = Set<AnyCancellable>()
+    /// Off-main queue for JSON encode + UserDefaults writes so persistence never hitches
+    /// the UI during playback.
+    private let saveQueue = DispatchQueue(label: "EnglishRepeater.save", qos: .utility)
     let aiExplainer = AIExplainer()
     let stats = ListeningStats()
     private let cueSynth = AVSpeechSynthesizer()
@@ -118,6 +160,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
         loadKeyMapping()
         loadPlaybackRate()
         loadLibrary()
+        loadFolders()
         setupAudioSession()
         setupAutoSave()
         setupLifecycleObservers()
@@ -139,6 +182,11 @@ final class PlayerViewModel: NSObject, ObservableObject {
             .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in self?.saveLibrary() }
             .store(in: &cancellables)
+
+        $folders
+            .debounce(for: .seconds(0.3), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in self?.saveFolders() }
+            .store(in: &cancellables)
     }
 
     // MARK: - Lifecycle
@@ -157,7 +205,13 @@ final class PlayerViewModel: NSObject, ObservableObject {
 
     @objc private func persistProgressNow() {
         saveProgress()
-        saveLibrary()   // synchronous write — bypass the debounced auto-save
+        // Synchronous writes here — the app may be suspending, so make sure they land.
+        if let data = try? JSONEncoder().encode(library) {
+            UserDefaults.standard.set(data, forKey: "library_v1")
+        }
+        if let data = try? JSONEncoder().encode(folders) {
+            UserDefaults.standard.set(data, forKey: "folders_v1")
+        }
         stats.flush()
     }
 
@@ -174,38 +228,118 @@ final class PlayerViewModel: NSObject, ObservableObject {
 
     // MARK: - Library
 
+    /// Single-file entry point (Share / "open with" from other apps). Lands in 未分类.
     func addToLibrary(url: URL) {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
 
-        // If it's an LRC file, cache it and do not add to library
         if url.pathExtension.lowercased() == "lrc" {
-            if let content = readLRCContent(from: url) {
-                let baseName = url.deletingPathExtension().lastPathComponent
-                let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-                let cacheURL = documents.appendingPathComponent(baseName + ".lrc")
-                try? content.write(to: cacheURL, atomically: true, encoding: .utf8)
-            }
-            return
+            cacheImportedLRC(url); return
         }
-
-        guard let bookmark = try? url.bookmarkData(
-            options: .minimalBookmark,
-            includingResourceValuesForKeys: nil,
-            relativeTo: nil
-        ) else { return }
-
+        guard !isDuplicate(url.lastPathComponent),
+              let bookmark = try? url.bookmarkData(options: .minimalBookmark,
+                                                   includingResourceValuesForKeys: nil, relativeTo: nil)
+        else { return }
         cacheLRCIfAvailable(for: url)
+        library.insert(LibraryItem(id: UUID(), fileName: url.lastPathComponent,
+                                   bookmarkData: bookmark, duration: 0, progress: 0,
+                                   dateAdded: Date()), at: 0)
+    }
 
-        let item = LibraryItem(
-            id: UUID(),
-            fileName: url.lastPathComponent,
-            bookmarkData: bookmark,
-            duration: 0,
-            progress: 0,
-            dateAdded: Date()
-        )
-        library.insert(item, at: 0)
+    private func isDuplicate(_ fileName: String) -> Bool {
+        library.contains { $0.fileName.caseInsensitiveCompare(fileName) == .orderedSame }
+    }
+
+    private func cacheImportedLRC(_ url: URL) {
+        guard let content = readLRCContent(from: url) else { return }
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let cacheURL = documents.appendingPathComponent(url.deletingPathExtension().lastPathComponent + ".lrc")
+        try? content.write(to: cacheURL, atomically: true, encoding: .utf8)
+    }
+
+    // MARK: - Multi-file Import (review flow)
+
+    /// Inspect picked URLs: cache any .lrc, bookmark audios, detect subtitle pairing and
+    /// duplicates. Bookmarks/lrc are created NOW while we still hold the security scope.
+    func prepareImport(urls: [URL]) -> ImportPlan {
+        // 1. Cache every .lrc first so audio pairing can see them.
+        for url in urls where url.pathExtension.lowercased() == "lrc" {
+            let accessing = url.startAccessingSecurityScopedResource()
+            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            cacheImportedLRC(url)
+        }
+        // 2. Build a candidate per audio.
+        var candidates: [ImportCandidate] = []
+        for url in urls where url.pathExtension.lowercased() != "lrc"
+                            && url.pathExtension.lowercased() != "txt" {
+            let accessing = url.startAccessingSecurityScopedResource()
+            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            guard let bookmark = try? url.bookmarkData(options: .minimalBookmark,
+                                                       includingResourceValuesForKeys: nil, relativeTo: nil)
+            else { continue }
+            cacheLRCIfAvailable(for: url)
+            let hasSub = FileManager.default.fileExists(atPath: lrcCachePath(for: url).path)
+            let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap { $0 }
+            candidates.append(ImportCandidate(
+                fileName: url.lastPathComponent,
+                bookmark: bookmark,
+                hasSubtitle: hasSub,
+                isDuplicate: isDuplicate(url.lastPathComponent),
+                sizeBytes: size.map(Int64.init)))
+        }
+        return ImportPlan(candidates: candidates)
+    }
+
+    /// Commit a reviewed plan into the chosen folder. Returns the number added.
+    @discardableResult
+    func commitImport(_ plan: ImportPlan, toFolder folderID: UUID?) -> Int {
+        let fresh = plan.candidates.filter { !$0.isDuplicate }
+        for c in fresh {
+            library.insert(LibraryItem(id: UUID(), fileName: c.fileName, bookmarkData: c.bookmark,
+                                       duration: 0, progress: 0, dateAdded: Date(),
+                                       folderID: folderID), at: 0)
+        }
+        return fresh.count
+    }
+
+    // MARK: - Folders
+
+    func createFolder(name: String) -> Folder {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        let idx = folders.count
+        let folder = Folder(name: trimmed.isEmpty ? "新文件夹" : trimmed,
+                            colorIndex: idx % Theme.folderColors.count,
+                            iconIndex: (idx + 1) % Theme.folderIcons.count,
+                            order: idx)
+        folders.append(folder)
+        return folder
+    }
+
+    func renameFolder(_ folder: Folder, to name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, let i = folders.firstIndex(where: { $0.id == folder.id }) else { return }
+        folders[i].name = trimmed
+    }
+
+    /// Delete a folder AND the audios inside it (per the chosen behavior). Stops playback
+    /// if the current track was in this folder.
+    func deleteFolder(_ folder: Folder) {
+        let victims = library.filter { $0.folderID == folder.id }
+        if let cur = currentItem, victims.contains(where: { $0.id == cur.id }) {
+            stop(); currentItem = nil
+        }
+        library.removeAll { $0.folderID == folder.id }
+        folders.removeAll { $0.id == folder.id }
+    }
+
+    func moveItem(_ item: LibraryItem, toFolder folderID: UUID?) {
+        guard let i = library.firstIndex(where: { $0.id == item.id }) else { return }
+        library[i].folderID = folderID
+        if currentItem?.id == item.id { currentItem?.folderID = folderID }
+    }
+
+    func items(in folderID: UUID?) -> [LibraryItem] {
+        library.filter { $0.folderID == folderID }
     }
 
     func selectItem(_ item: LibraryItem) {
@@ -367,6 +501,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
         if let lrcSegments = parseLRC(from: cachedLRC) {
             segments = lrcSegments
             displayText = lrcSegments.map { $0.text }.joined(separator: "\n")
+            subtitleSource = .lrc
             return
         }
 
@@ -378,6 +513,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
             }
             segments = lrcSegments
             displayText = lrcSegments.map { $0.text }.joined(separator: "\n")
+            subtitleSource = .lrc
             return
         }
 
@@ -387,6 +523,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
            let loaded = try? JSONDecoder().decode([Segment].self, from: data) {
             segments = loaded
             displayText = loaded.map { $0.text }.joined(separator: "\n")
+            subtitleSource = .generated
             return
         }
 
@@ -395,9 +532,11 @@ final class PlayerViewModel: NSObject, ObservableObject {
         if let text = try? String(contentsOf: textURL, encoding: .utf8) {
             displayText = text
             segments = []
+            subtitleSource = .plainText
         } else {
             displayText = ""
             segments = []
+            subtitleSource = .none
         }
     }
 
@@ -474,6 +613,28 @@ final class PlayerViewModel: NSObject, ObservableObject {
 
     private let speechRecognizer = SpeechRecognizer()
 
+    /// Re-recognize, replacing whatever lyrics exist now (including bonded LRC). Removes
+    /// the cached LRC + generated files so the new recognition result actually persists.
+    func regenerateSubtitles(for item: LibraryItem) {
+        guard let url = item.resolvedURL else { return }
+        try? FileManager.default.removeItem(at: lrcCachePath(for: url))
+        try? FileManager.default.removeItem(at: segmentsFilePath(for: url))
+        segments = []
+        displayText = ""
+        subtitleSource = .none
+        generateSubtitles(for: item)
+    }
+
+    /// Remove all lyrics for this audio (cached LRC + generated). Destructive.
+    func clearSubtitles(for item: LibraryItem) {
+        guard let url = item.resolvedURL else { return }
+        try? FileManager.default.removeItem(at: lrcCachePath(for: url))
+        try? FileManager.default.removeItem(at: segmentsFilePath(for: url))
+        segments = []
+        displayText = ""
+        subtitleSource = .none
+    }
+
     func generateSubtitles(for item: LibraryItem) {
         guard let url = item.resolvedURL else { return }
         isGeneratingSubtitles = true
@@ -497,6 +658,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
                     self.saveSegments(segs, for: url)
                     self.segments = segs
                     self.displayText = segs.map { $0.text }.joined(separator: "\n")
+                    self.subtitleSource = segs.isEmpty ? .none : .generated
                 case .failure(let error):
                     if self.segments.isEmpty {
                         self.subtitleProgress = "失败: \(error.localizedDescription)"
@@ -505,10 +667,13 @@ final class PlayerViewModel: NSObject, ObservableObject {
             }
         }
 
-        Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] t in
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] t in
             guard let self else { t.invalidate(); return }
             if !self.isGeneratingSubtitles { t.invalidate(); return }
-            self.subtitleProgress = self.speechRecognizer.progress
+            // Only publish when the string actually changes — avoids re-rendering on every
+            // tick while the percentage is unchanged.
+            let p = self.speechRecognizer.progress
+            if p != self.subtitleProgress { self.subtitleProgress = p }
         }
     }
 
@@ -750,6 +915,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
         }
         aiVoicePlayer = voice
         voice.delegate = self
+        voice.numberOfLoops = -1   // repeat the explanation until the user closes the sheet
         aiVoiceStartedAt = Date()
         voice.play()
     }
@@ -781,7 +947,10 @@ final class PlayerViewModel: NSObject, ObservableObject {
 
     private func friendlyError(_ error: Error) -> String {
         if (error as? URLError)?.code == .timedOut { return "AI 响应超时,请重试" }
-        return "AI 请求失败,请检查网络或密钥"
+        if let urlErr = error as? URLError { return "网络错误: \(urlErr.localizedDescription)" }
+        // AIError.api carries the actual server message — surface it.
+        if let aiErr = error as? AIError, let msg = aiErr.errorDescription { return msg }
+        return error.localizedDescription
     }
 
     // MARK: - Audio Clip Extraction
@@ -805,10 +974,18 @@ final class PlayerViewModel: NSObject, ObservableObject {
                 let src = try AVAudioFile(forReading: url)
                 let format = src.processingFormat
                 let sr = format.sampleRate
-                let total = Double(src.length) / sr
-                let from = max(0, start - 0.15)
-                let len = min(duration + 0.4, max(0, total - from))
-                guard len > 0 else { DispatchQueue.main.async { completion(nil) }; return }
+                let totalFrames = src.length
+                let total = Double(totalFrames) / sr
+
+                // Clamp the requested window inside the file. A bad transcript can give
+                // segments past EOF; without clamping, read() returns 0 frames and we
+                // ship an empty WAV that the API rejects.
+                let from = max(0, min(start - 0.15, total - 0.05))
+                let maxLen = max(0, total - from)
+                let len = min(duration + 0.4, maxLen)
+                guard len >= 0.1 else {
+                    DispatchQueue.main.async { completion(nil) }; return
+                }
 
                 let frameCount = AVAudioFrameCount(len * sr)
                 guard frameCount > 0,
@@ -817,22 +994,25 @@ final class PlayerViewModel: NSObject, ObservableObject {
                 }
                 src.framePosition = AVAudioFramePosition(from * sr)
                 try src.read(into: buffer, frameCount: frameCount)
+                guard buffer.frameLength > 0 else {
+                    DispatchQueue.main.async { completion(nil) }; return
+                }
 
-                let settings: [String: Any] = [
-                    AVFormatIDKey: kAudioFormatLinearPCM,
-                    AVSampleRateKey: sr,
-                    AVNumberOfChannelsKey: format.channelCount,
-                    AVLinearPCMBitDepthKey: 16,
-                    AVLinearPCMIsFloatKey: false,
-                    AVLinearPCMIsBigEndianKey: false
-                ]
-                let out = try AVAudioFile(forWriting: outURL, settings: settings)
+                // Use the source's processingFormat for the output settings too. Writing
+                // Float32 PCM WAV directly avoids the Int16 conversion path that was
+                // triggering "mBuffers[0].mDataByteSize (0) should be non-zero" warnings.
+                let out = try AVAudioFile(forWriting: outURL,
+                                          settings: format.settings,
+                                          commonFormat: format.commonFormat,
+                                          interleaved: format.isInterleaved)
                 try out.write(from: buffer)
 
                 let data = try? Data(contentsOf: outURL)
+                if (data?.count ?? 0) < 100 {
+                    DispatchQueue.main.async { completion(nil) }; return
+                }
                 DispatchQueue.main.async { completion(data) }
             } catch {
-                print("Clip extraction error: \(error)")
                 DispatchQueue.main.async { completion(nil) }
             }
         }
@@ -890,8 +1070,11 @@ final class PlayerViewModel: NSObject, ObservableObject {
     }
 
     private func saveLibrary() {
-        if let data = try? JSONEncoder().encode(library) {
-            UserDefaults.standard.set(data, forKey: "library_v1")
+        let snapshot = library   // value copy; encode off the main thread
+        saveQueue.async {
+            if let data = try? JSONEncoder().encode(snapshot) {
+                UserDefaults.standard.set(data, forKey: "library_v1")
+            }
         }
     }
 
@@ -899,6 +1082,22 @@ final class PlayerViewModel: NSObject, ObservableObject {
         if let data = UserDefaults.standard.data(forKey: "library_v1"),
            let items = try? JSONDecoder().decode([LibraryItem].self, from: data) {
             library = items
+        }
+    }
+
+    private func saveFolders() {
+        let snapshot = folders
+        saveQueue.async {
+            if let data = try? JSONEncoder().encode(snapshot) {
+                UserDefaults.standard.set(data, forKey: "folders_v1")
+            }
+        }
+    }
+
+    private func loadFolders() {
+        if let data = UserDefaults.standard.data(forKey: "folders_v1"),
+           let decoded = try? JSONDecoder().decode([Folder].self, from: data) {
+            folders = decoded
         }
     }
 }

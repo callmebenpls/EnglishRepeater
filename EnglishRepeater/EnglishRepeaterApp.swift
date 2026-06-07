@@ -22,6 +22,7 @@ struct EnglishRepeaterApp: App {
                     }
                     .tag(1)
             }
+            .tint(Theme.accent)
             .onOpenURL { url in
                 playerVM.addToLibrary(url: url)
                 selectedTab = 0

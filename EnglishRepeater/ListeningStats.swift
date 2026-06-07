@@ -59,16 +59,25 @@ final class ListeningStats: ObservableObject {
     /// Force a synchronous write — call on pause, app background, and terminate.
     func flush() {
         ticksSinceFlush = 0
-        persist()
+        Self.write(total: totalSeconds, buckets: dayBuckets)
     }
 
     // MARK: - Persistence
 
+    private let ioQueue = DispatchQueue(label: "EnglishRepeater.stats.io", qos: .utility)
+
+    /// Periodic save — encode off the main thread from a value snapshot.
     private func persist() {
+        let total = totalSeconds
+        let buckets = dayBuckets
+        ioQueue.async { Self.write(total: total, buckets: buckets) }
+    }
+
+    private static func write(total: Double, buckets: [String: Double]) {
         let defaults = UserDefaults.standard
-        defaults.set(totalSeconds, forKey: ListeningStats.totalKey)
-        if let data = try? JSONEncoder().encode(dayBuckets) {
-            defaults.set(data, forKey: ListeningStats.dayKey)
+        defaults.set(total, forKey: totalKey)
+        if let data = try? JSONEncoder().encode(buckets) {
+            defaults.set(data, forKey: dayKey)
         }
     }
 
