@@ -44,6 +44,11 @@ struct LibraryView: View {
 
                 if let toast { toastView(toast) }
             }
+            // Swipe in from the RIGHT edge → go to the Player (mirror of the back gesture).
+            // Edge-only so it doesn't clash with rows' swipe-to-delete/move.
+            .background(RightEdgePushGesture {
+                if vm.currentItem != nil { page = 1 }
+            })
             .navigationTitle("音频库")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(isPresented: Binding(
@@ -607,5 +612,43 @@ struct MoveToFolderSheet: View {
             }
         }
         .listRowBackground(Theme.card)
+    }
+}
+
+// MARK: - Right-edge push gesture
+
+/// A screen-edge pan from the RIGHT that fires `action` — used to swipe-left into the
+/// Player. Attached to the window so it works over the List without intercepting taps or
+/// the rows' own (mid-screen) swipe actions.
+private struct RightEdgePushGesture: UIViewRepresentable {
+    var action: () -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(action: action) }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView(frame: .zero)
+        view.backgroundColor = .clear
+        DispatchQueue.main.async { [weak view] in
+            guard let window = view?.window, context.coordinator.gesture == nil else { return }
+            let g = UIScreenEdgePanGestureRecognizer(target: context.coordinator,
+                                                     action: #selector(Coordinator.handle(_:)))
+            g.edges = .right
+            window.addGestureRecognizer(g)
+            context.coordinator.gesture = g
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.action = action
+    }
+
+    final class Coordinator: NSObject {
+        var action: () -> Void
+        weak var gesture: UIScreenEdgePanGestureRecognizer?
+        init(action: @escaping () -> Void) { self.action = action }
+        @objc func handle(_ g: UIScreenEdgePanGestureRecognizer) {
+            if g.state == .recognized { action() }
+        }
     }
 }

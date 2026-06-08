@@ -255,13 +255,30 @@ private struct PlaybackPane: View {
         }
     }
 
-    /// Center the active line without animation — used on open / track change, so a paused
-    /// track still shows its current line centered (the per-tick scroll won't fire when paused).
+    /// Center the current line on open / track change, so a paused track shows its line
+    /// centered (the per-tick scroll won't fire when paused). Delayed so the push transition
+    /// and initial layout have settled — otherwise scrollTo is a no-op.
     private func centerActive(_ proxy: ScrollViewProxy) {
-        let idx = activeIndex
+        let idx = nearestIndex
         guard idx >= 0 else { return }
         lastActive = idx
-        DispatchQueue.main.async { proxy.scrollTo(idx, anchor: .center) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            proxy.scrollTo(idx, anchor: .center)
+        }
+    }
+
+    /// The line to center on: the active one, or — if the play head sits in a gap / before
+    /// the first cue — the last line whose start has passed (so there's always a target).
+    private var nearestIndex: Int {
+        if !vm.segments.isEmpty {
+            var idx = 0
+            for (i, s) in vm.segments.enumerated() {
+                if s.start <= t + 0.05 { idx = i } else { break }
+            }
+            return idx
+        }
+        let total = vm.displayText.components(separatedBy: .newlines).count
+        return total > 0 ? activeLineIndex(total: total) : -1
     }
 
     private var placeholderLyrics: some View {
