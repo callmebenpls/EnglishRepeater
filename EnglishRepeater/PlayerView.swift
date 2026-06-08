@@ -7,63 +7,50 @@ struct PlayerView: View {
     @State private var showLyricManager = false
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Theme.canvas.ignoresSafeArea()
-                VStack(spacing: 0) {
-                    if vm.currentItem == nil {
-                        emptyState
-                    } else {
-                        contentView
-                    }
+        ZStack {
+            Theme.canvas.ignoresSafeArea()
+            VStack(spacing: 0) {
+                if vm.currentItem == nil {
+                    emptyState
+                } else {
+                    contentView
                 }
             }
-            // Faint coral hint at the leading edge: the Library is one right-swipe away.
-            .overlay(alignment: .leading) {
-                LinearGradient(colors: [Theme.accent.opacity(0.12), .clear],
-                               startPoint: .leading, endPoint: .trailing)
-                    .frame(width: 12)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
-            }
-            .navigationTitle("正在播放")
-            .navigationBarTitleDisplayMode(.inline)
-            .tint(Theme.accent)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    if vm.currentItem != nil && !vm.isGeneratingSubtitles {
-                        Button(action: { showLyricManager = true }) {
-                            Image(systemName: vm.subtitleSource.hasLyrics ? "captions.bubble.fill" : "captions.bubble")
-                        }
-                    }
-                    if vm.isGeneratingSubtitles {
-                        ProgressView()
-                            .scaleEffect(0.8)
+        }
+        .navigationTitle("正在播放")
+        .navigationBarTitleDisplayMode(.inline)
+        .tint(Theme.accent)
+        .toolbar {
+            // Trailing group: lyrics manager + settings (leading is the back button now).
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                if vm.isGeneratingSubtitles {
+                    ProgressView().scaleEffect(0.8)
+                } else if vm.currentItem != nil {
+                    Button(action: { showLyricManager = true }) {
+                        Image(systemName: vm.subtitleSource.hasLyrics ? "captions.bubble.fill" : "captions.bubble")
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showSettings = true }) {
-                        Image(systemName: "slider.horizontal.3")
-                    }
+                Button(action: { showSettings = true }) {
+                    Image(systemName: "slider.horizontal.3")
                 }
             }
-            .sheet(isPresented: $showSettings) {
-                SettingsView()
-                    .environmentObject(vm)
-            }
-            .sheet(isPresented: $showLyricManager) {
-                LyricManagerSheet()
-                    .environmentObject(vm)
-                    .presentationDetents([.medium, .large])
-            }
-            .sheet(isPresented: Binding(
-                get: { vm.aiState != .idle },
-                set: { if !$0 { vm.cancelAI() } }
-            )) {
-                AIExplainSheet()
-                    .environmentObject(vm)
-                    .presentationDetents([.medium])
-            }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+                .environmentObject(vm)
+        }
+        .sheet(isPresented: $showLyricManager) {
+            LyricManagerSheet()
+                .environmentObject(vm)
+                .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: Binding(
+            get: { vm.aiState != .idle },
+            set: { if !$0 { vm.cancelAI() } }
+        )) {
+            AIExplainSheet()
+                .environmentObject(vm)
+                .presentationDetents([.medium])
         }
     }
 
@@ -252,9 +239,20 @@ private struct PlaybackPane: View {
                     lastActive = idx
                     withAnimation(.easeInOut(duration: 0.3)) { proxy.scrollTo(idx, anchor: .center) }
                 }
+                .onChange(of: vm.segments) { _ in centerActive(proxy) }   // new track
+                .onAppear { centerActive(proxy) }                          // opening (e.g. paused)
             }
             .padding(.horizontal, 16)
         }
+    }
+
+    /// Center the active line without animation — used on open / track change, so a paused
+    /// track still shows its current line centered (the per-tick scroll won't fire when paused).
+    private func centerActive(_ proxy: ScrollViewProxy) {
+        let idx = activeIndex
+        guard idx >= 0 else { return }
+        lastActive = idx
+        DispatchQueue.main.async { proxy.scrollTo(idx, anchor: .center) }
     }
 
     private var placeholderLyrics: some View {

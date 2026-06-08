@@ -46,6 +46,12 @@ struct LibraryView: View {
             }
             .navigationTitle("音频库")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(isPresented: Binding(
+                get: { page == 1 && vm.currentItem != nil },
+                set: { if !$0 { page = 0 } }
+            )) {
+                PlayerView()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
