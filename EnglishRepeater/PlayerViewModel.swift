@@ -132,6 +132,14 @@ final class PlayerViewModel: NSObject, ObservableObject {
     @Published var isGeneratingSubtitles = false
     @Published var subtitleProgress = ""
     @Published var subtitleSource: SubtitleSource = .none
+    /// All lyric tracks for the current audio + which one is active.
+    @Published var lyricTracks: [LyricTrack] = []
+    @Published var selectedLyricID: UUID?
+    private var currentLyricsURL: URL?
+    /// The track actually shown (explicit selection, else highest priority).
+    var activeLyricID: UUID? {
+        LyricLibrary(selectedID: selectedLyricID, tracks: lyricTracks).active?.id
+    }
     /// Index into `segments` of the sentence currently being looped, or nil if not looping.
     /// True while the user's 5-second loop is active (drives the loop pill highlight).
     @Published var isLooping = false
@@ -388,7 +396,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
             setupRemoteCommandsIfNeeded()
             seek(to: item.progress)
             updateNowPlayingInfo()
-            loadDisplayText(for: item, url: url)
+            loadLyrics(for: item, url: url)
             play()
         } catch {
             print("Load error: \(error)")
@@ -491,57 +499,118 @@ final class PlayerViewModel: NSObject, ObservableObject {
         return String(data: data, encoding: gbkEnc)
     }
 
-    private func loadDisplayText(for item: LibraryItem, url: URL? = nil) {
+    // MARK: - Lyric Library (multi-track)
+
+    private func loadLyrics(for item: LibraryItem, url: URL? = nil) {
         let audioURL: URL
-        if let u = url {
-            audioURL = u
+        if let u = url { audioURL = u } else { guard let u = item.resolvedURL else { return }; audioURL = u }
+        currentLyricsURL = lyricLibraryPath(for: audioURL)
+
+        let lib: LyricLibrary
+        if let existing = loadLyricLibrary(at: currentLyricsURL!) {
+            lib = existing
         } else {
-            guard let u = item.resolvedURL else { return }
-            audioURL = u
+            lib = migrateLegacyLyrics(for: audioURL)   // first open of this audio
+            persist(lib)
         }
+        lyricTracks = lib.tracks
+        selectedLyricID = lib.selectedID
+        applyActiveTrack()
+    }
 
-        // 1. Cached LRC from Documents
-        let cachedLRC = lrcCachePath(for: audioURL)
-        if let lrcSegments = parseLRC(from: cachedLRC) {
-            segments = lrcSegments
-            displayText = lrcSegments.map { $0.text }.joined(separator: "\n")
-            subtitleSource = .lrc
-            return
-        }
-
-        // 2. Try original .lrc next to audio
-        let originalLRC = audioURL.deletingPathExtension().appendingPathExtension("lrc")
-        if let lrcSegments = parseLRC(from: originalLRC) {
-            if let content = readLRCContent(from: originalLRC) {
-                try? content.write(to: cachedLRC, atomically: true, encoding: .utf8)
-            }
-            segments = lrcSegments
-            displayText = lrcSegments.map { $0.text }.joined(separator: "\n")
-            subtitleSource = .lrc
-            return
-        }
-
-        // 3. Generated segments
-        let segmentsURL = segmentsFilePath(for: audioURL)
-        if let data = try? Data(contentsOf: segmentsURL),
-           let loaded = try? JSONDecoder().decode([Segment].self, from: data) {
-            segments = loaded
-            displayText = loaded.map { $0.text }.joined(separator: "\n")
-            subtitleSource = .generated
-            return
-        }
-
-        // 4. Plain text fallback
-        let textURL = audioURL.deletingPathExtension().appendingPathExtension("txt")
-        if let text = try? String(contentsOf: textURL, encoding: .utf8) {
-            displayText = text
+    /// Push the active track's content into the fields the player reads.
+    private func applyActiveTrack() {
+        if let t = LyricLibrary(selectedID: selectedLyricID, tracks: lyricTracks).active {
+            segments = t.segments
+            displayText = t.displayText
+            subtitleSource = source(for: t.kind)
+        } else {
             segments = []
-            subtitleSource = .plainText
-        } else {
             displayText = ""
-            segments = []
             subtitleSource = .none
         }
+    }
+
+    private func source(for kind: LyricTrack.Kind) -> SubtitleSource {
+        switch kind {
+        case .lrc:       return .lrc
+        case .recognized: return .generated
+        case .plainText: return .plainText
+        }
+    }
+
+    // Operations used by the lyric manager.
+    func selectLyric(_ id: UUID) {
+        selectedLyricID = id
+        applyActiveTrack()
+        persistCurrentLyrics()
+    }
+
+    func deleteLyric(_ id: UUID) {
+        lyricTracks.removeAll { $0.id == id }
+        if selectedLyricID == id { selectedLyricID = nil }
+        applyActiveTrack()
+        persistCurrentLyrics()
+    }
+
+    private func addRecognizedTrack(_ segs: [Segment]) {
+        let track = LyricTrack(name: "AI 识别 · " + Self.shortDate(), kind: .recognized, segments: segs)
+        lyricTracks.insert(track, at: 0)
+        selectedLyricID = track.id
+        applyActiveTrack()
+        persistCurrentLyrics()
+    }
+
+    /// Import a .lrc as a new track for the current audio and select it.
+    func importLyricFile(_ url: URL) {
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+        guard let segs = parseLRC(from: url) else { return }
+        let track = LyricTrack(name: url.deletingPathExtension().lastPathComponent, kind: .lrc, segments: segs)
+        lyricTracks.insert(track, at: 0)
+        selectedLyricID = track.id
+        applyActiveTrack()
+        persistCurrentLyrics()
+    }
+
+    // Storage
+    private func lyricLibraryPath(for url: URL) -> URL {
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return documents.appendingPathComponent(url.deletingPathExtension().lastPathComponent + ".lyrics.json")
+    }
+    private func loadLyricLibrary(at url: URL) -> LyricLibrary? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(LyricLibrary.self, from: data)
+    }
+    private func persistCurrentLyrics() {
+        persist(LyricLibrary(selectedID: selectedLyricID, tracks: lyricTracks))
+    }
+    private func persist(_ lib: LyricLibrary) {
+        guard let url = currentLyricsURL, let data = try? JSONEncoder().encode(lib) else { return }
+        saveQueue.async { try? data.write(to: url) }
+    }
+
+    /// One-time migration of any pre-existing LRC / recognized / txt lyrics into tracks.
+    private func migrateLegacyLyrics(for url: URL) -> LyricLibrary {
+        var tracks: [LyricTrack] = []
+        cacheLRCIfAvailable(for: url)
+        if let segs = parseLRC(from: lrcCachePath(for: url)) {
+            tracks.append(LyricTrack(name: "导入字幕", kind: .lrc, segments: segs))
+        }
+        if let data = try? Data(contentsOf: segmentsFilePath(for: url)),
+           let segs = try? JSONDecoder().decode([Segment].self, from: data), !segs.isEmpty {
+            tracks.append(LyricTrack(name: "AI 识别", kind: .recognized, segments: segs))
+        }
+        let textURL = url.deletingPathExtension().appendingPathExtension("txt")
+        if let text = try? String(contentsOf: textURL, encoding: .utf8),
+           !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            tracks.append(LyricTrack(name: "文本", kind: .plainText, plainText: text))
+        }
+        return LyricLibrary(selectedID: nil, tracks: tracks)
+    }
+
+    private static func shortDate() -> String {
+        let f = DateFormatter(); f.dateFormat = "MM-dd"; return f.string(from: Date())
     }
 
     // MARK: - LRC Cache
@@ -617,28 +686,6 @@ final class PlayerViewModel: NSObject, ObservableObject {
 
     private let speechRecognizer = SpeechRecognizer()
 
-    /// Re-recognize, replacing whatever lyrics exist now (including bonded LRC). Removes
-    /// the cached LRC + generated files so the new recognition result actually persists.
-    func regenerateSubtitles(for item: LibraryItem) {
-        guard let url = item.resolvedURL else { return }
-        try? FileManager.default.removeItem(at: lrcCachePath(for: url))
-        try? FileManager.default.removeItem(at: segmentsFilePath(for: url))
-        segments = []
-        displayText = ""
-        subtitleSource = .none
-        generateSubtitles(for: item)
-    }
-
-    /// Remove all lyrics for this audio (cached LRC + generated). Destructive.
-    func clearSubtitles(for item: LibraryItem) {
-        guard let url = item.resolvedURL else { return }
-        try? FileManager.default.removeItem(at: lrcCachePath(for: url))
-        try? FileManager.default.removeItem(at: segmentsFilePath(for: url))
-        segments = []
-        displayText = ""
-        subtitleSource = .none
-    }
-
     func generateSubtitles(for item: LibraryItem) {
         guard let url = item.resolvedURL else { return }
         isGeneratingSubtitles = true
@@ -659,10 +706,11 @@ final class PlayerViewModel: NSObject, ObservableObject {
                 self.speechRecognizer.onChunkComplete = nil
                 switch result {
                 case .success(let segs):
-                    self.saveSegments(segs, for: url)
-                    self.segments = segs
-                    self.displayText = segs.map { $0.text }.joined(separator: "\n")
-                    self.subtitleSource = segs.isEmpty ? .none : .generated
+                    if segs.isEmpty {
+                        self.subtitleProgress = "未识别到内容"
+                    } else {
+                        self.addRecognizedTrack(segs)   // adds a new track + selects it
+                    }
                 case .failure(let error):
                     if self.segments.isEmpty {
                         self.subtitleProgress = "失败: \(error.localizedDescription)"
@@ -686,11 +734,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
         isGeneratingSubtitles = false
     }
 
-    private func saveSegments(_ segments: [Segment], for url: URL) {
-        guard let data = try? JSONEncoder().encode(segments) else { return }
-        try? data.write(to: segmentsFilePath(for: url))
-    }
-
+    /// Legacy path — only read during migration of old generated subtitles.
     private func segmentsFilePath(for url: URL) -> URL {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let filename = url.deletingPathExtension().lastPathComponent + ".segments.json"

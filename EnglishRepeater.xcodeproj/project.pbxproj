@@ -19,6 +19,7 @@
 		B010 /* ListeningStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = A011 /* ListeningStats.swift */; };
 		B011 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A012 /* Theme.swift */; };
 		B012 /* Folder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A013 /* Folder.swift */; };
+		B013 /* LyricTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A014 /* LyricTrack.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		A011 /* ListeningStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningStats.swift; sourceTree = "<group>"; };
 		A012 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A013 /* Folder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Folder.swift; sourceTree = "<group>"; };
+		A014 /* LyricTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricTrack.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +73,7 @@
 				A011 /* ListeningStats.swift */,
 				A012 /* Theme.swift */,
 				A013 /* Folder.swift */,
+				A014 /* LyricTrack.swift */,
 				A008 /* Assets.xcassets */,
 				A007 /* Info.plist */,
 			);
@@ -165,6 +168,7 @@
 				B010 /* ListeningStats.swift in Sources */,
 				B011 /* Theme.swift in Sources */,
 				B012 /* Folder.swift in Sources */,
+				B013 /* LyricTrack.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

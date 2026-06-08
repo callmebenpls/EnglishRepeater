@@ -1,9 +1,10 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct PlayerView: View {
     @EnvironmentObject var vm: PlayerViewModel
     @State private var showSettings = false
-    @State private var showSubtitleOptions = false
+    @State private var showLyricManager = false
 
     var body: some View {
         NavigationStack {
@@ -23,14 +24,7 @@ struct PlayerView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     if vm.currentItem != nil && !vm.isGeneratingSubtitles {
-                        Button(action: {
-                            guard let item = vm.currentItem else { return }
-                            if vm.subtitleSource.hasLyrics {
-                                showSubtitleOptions = true        // already have lyrics → ask first
-                            } else {
-                                vm.generateSubtitles(for: item)   // nothing to lose → generate
-                            }
-                        }) {
+                        Button(action: { showLyricManager = true }) {
                             Image(systemName: vm.subtitleSource.hasLyrics ? "captions.bubble.fill" : "captions.bubble")
                         }
                     }
@@ -49,22 +43,10 @@ struct PlayerView: View {
                 SettingsView()
                     .environmentObject(vm)
             }
-            .confirmationDialog(
-                "当前：\(vm.subtitleSource.label)",
-                isPresented: $showSubtitleOptions,
-                titleVisibility: .visible
-            ) {
-                if let item = vm.currentItem {
-                    Button("重新识别（替换现有字幕）", role: .destructive) {
-                        vm.regenerateSubtitles(for: item)
-                    }
-                    Button("清除字幕", role: .destructive) {
-                        vm.clearSubtitles(for: item)
-                    }
-                    Button("取消", role: .cancel) {}
-                }
-            } message: {
-                Text("这条音频已有字幕。重新识别或清除都会覆盖现有字幕，无法恢复。")
+            .sheet(isPresented: $showLyricManager) {
+                LyricManagerSheet()
+                    .environmentObject(vm)
+                    .presentationDetents([.medium, .large])
             }
             .sheet(isPresented: Binding(
                 get: { vm.aiState != .idle },
@@ -467,6 +449,93 @@ struct AIExplainSheet: View {
                         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.chip))
                 }
             }
+        }
+    }
+}
+
+// MARK: - Lyric Manager Sheet
+
+/// Manage the lyric tracks for the current audio: pick which one is shown, delete, or add
+/// (AI-generate / import .lrc). Auto-named tracks; LRC > AI priority when none is selected.
+struct LyricManagerSheet: View {
+    @EnvironmentObject var vm: PlayerViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var showLRCImporter = false
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Theme.canvas.ignoresSafeArea()
+                List {
+                    if vm.lyricTracks.isEmpty {
+                        Section {
+                            Text("这条音频还没有字幕")
+                                .font(.subheadline).foregroundStyle(Theme.textSecondary)
+                        }
+                        .listRowBackground(Theme.card)
+                    } else {
+                        Section("字幕") {
+                            ForEach(vm.lyricTracks) { track in row(track) }
+                        }
+                        .listRowBackground(Theme.card)
+                    }
+
+                    Section {
+                        Button {
+                            if let item = vm.currentItem { vm.generateSubtitles(for: item) }
+                            dismiss()
+                        } label: {
+                            Label(vm.lyricTracks.isEmpty ? "用 AI 生成字幕（本机离线，约 30–60 秒）" : "用 AI 生成",
+                                  systemImage: "sparkles")
+                                .foregroundStyle(Theme.accent)
+                        }
+                        Button { showLRCImporter = true } label: {
+                            Label("导入 .lrc 文件", systemImage: "square.and.arrow.down")
+                                .foregroundStyle(Theme.accent)
+                        }
+                    }
+                    .listRowBackground(Theme.card)
+                }
+                .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+            }
+            .navigationTitle("字幕")
+            .navigationBarTitleDisplayMode(.inline)
+            .tint(Theme.accent)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
+            .fileImporter(isPresented: $showLRCImporter,
+                          allowedContentTypes: [UTType(filenameExtension: "lrc") ?? .data]) { result in
+                if case .success(let url) = result { vm.importLyricFile(url) }
+            }
+        }
+    }
+
+    private func row(_ track: LyricTrack) -> some View {
+        Button { vm.selectLyric(track.id) } label: {
+            HStack(spacing: 12) {
+                Image(systemName: icon(track.kind)).foregroundStyle(Theme.accent).frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(track.name).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.textPrimary)
+                    Text(track.kind.tag + (track.hasTiming ? "" : " · 无时间轴"))
+                        .font(.caption2).foregroundStyle(Theme.textSecondary)
+                }
+                Spacer()
+                if track.id == vm.activeLyricID {
+                    Image(systemName: "checkmark").foregroundStyle(Theme.accent)
+                }
+            }
+        }
+        .listRowBackground(Theme.card)
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) { vm.deleteLyric(track.id) } label: { Label("删除", systemImage: "trash") }
+        }
+    }
+
+    private func icon(_ kind: LyricTrack.Kind) -> String {
+        switch kind {
+        case .lrc: return "doc.text"
+        case .recognized: return "waveform"
+        case .plainText: return "text.alignleft"
         }
     }
 }

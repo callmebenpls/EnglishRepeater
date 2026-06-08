@@ -2,7 +2,7 @@ import Foundation
 import Speech
 import AVFoundation
 
-struct Segment: Codable {
+struct Segment: Codable, Equatable {
     let text: String
     let start: TimeInterval
     let duration: TimeInterval
