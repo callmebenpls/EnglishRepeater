@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct PlayerView: View {
     @EnvironmentObject var vm: PlayerViewModel
+    @Environment(\.dismiss) private var dismiss
     @State private var showSettings = false
     @State private var showLyricManager = false
 
@@ -19,9 +20,17 @@ struct PlayerView: View {
         }
         .navigationTitle("正在播放")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)        // hide "‹ 音频库" text
+        .background(SwipeBackEnabler())             // keep right-swipe-to-go-back working
         .tint(Theme.accent)
         .toolbar {
-            // Trailing group: lyrics manager + settings (leading is the back button now).
+            // Clean chevron back (no text). Swipe-right also works.
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold))
+                }
+            }
+            // Trailing group: lyrics manager + settings.
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 if vm.isGeneratingSubtitles {
                     ProgressView().scaleEffect(0.8)
@@ -545,4 +554,22 @@ struct LyricManagerSheet: View {
         case .plainText: return "text.alignleft"
         }
     }
+}
+
+// MARK: - Swipe-back enabler
+
+/// Re-enables the interactive right-swipe-to-pop gesture when the default back button is
+/// hidden (SwiftUI disables it otherwise). Harmless if the nav controller isn't found.
+private struct SwipeBackEnabler: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController {
+        let vc = UIViewController()
+        DispatchQueue.main.async {
+            if let nav = vc.navigationController {
+                nav.interactivePopGestureRecognizer?.isEnabled = true
+                nav.interactivePopGestureRecognizer?.delegate = nil
+            }
+        }
+        return vc
+    }
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
 }
