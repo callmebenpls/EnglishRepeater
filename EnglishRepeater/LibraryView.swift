@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 
 struct LibraryView: View {
     @EnvironmentObject var vm: PlayerViewModel
-    @Binding var selectedTab: Int
+    @Binding var page: Int
 
     @State private var showFilePicker = false
     @State private var searchText = ""
@@ -209,25 +209,32 @@ struct LibraryView: View {
     // MARK: - Item row
 
     private func itemRow(_ item: LibraryItem) -> some View {
-        Button {
-            vm.selectItem(item)
-            selectedTab = 1
+        let isCurrent = vm.currentItem?.id == item.id
+        return Button {
+            if isCurrent {
+                page = 1                 // already playing — just go to the Player, no restart
+            } else {
+                vm.selectItem(item)
+                withAnimation { page = 1 }
+            }
         } label: {
             HStack(spacing: 12) {
                 progressAvatar(item)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.displayTitle)
                         .font(.system(size: 14.5, weight: .semibold))
-                        .foregroundStyle(Theme.textPrimary)
+                        .foregroundStyle(isCurrent ? Theme.accent : Theme.textPrimary)
                         .lineLimit(1)
-                    Text(progressLabel(item))
-                        .font(.caption2).foregroundStyle(Theme.textSecondary)
+                    Text(isCurrent ? "正在播放 · \(progressLabel(item))" : progressLabel(item))
+                        .font(.caption2)
+                        .foregroundStyle(isCurrent ? Theme.accent.opacity(0.8) : Theme.textSecondary)
                 }
                 Spacer()
-                Image(systemName: "play.fill").font(.caption).foregroundStyle(Theme.accent)
+                Image(systemName: isCurrent ? "speaker.wave.2.fill" : "play.fill")
+                    .font(.caption).foregroundStyle(Theme.accent)
             }
         }
-        .listRowBackground(Theme.card)
+        .listRowBackground(isCurrent ? Theme.accentSoft.opacity(0.5) : Theme.card)
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) { vm.removeItem(item) } label: { Label("删除", systemImage: "trash") }
             Button { movingItem = item } label: { Label("移到", systemImage: "folder") }
@@ -355,7 +362,7 @@ struct LibraryView: View {
 }
 
 #Preview {
-    LibraryView(selectedTab: .constant(0))
+    LibraryView(page: .constant(0))
         .environmentObject(PlayerViewModel())
 }
 

@@ -18,6 +18,14 @@ struct PlayerView: View {
                     }
                 }
             }
+            // Faint coral hint at the leading edge: the Library is one right-swipe away.
+            .overlay(alignment: .leading) {
+                LinearGradient(colors: [Theme.accent.opacity(0.12), .clear],
+                               startPoint: .leading, endPoint: .trailing)
+                    .frame(width: 12)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
             .navigationTitle("正在播放")
             .navigationBarTitleDisplayMode(.inline)
             .tint(Theme.accent)
@@ -67,11 +75,12 @@ struct PlayerView: View {
             Image(systemName: "earbuds")
                 .font(.system(size: 48))
                 .foregroundStyle(.tertiary)
-            Text("从音频库选择音频")
+            Text("还没有在播放")
                 .font(.headline)
-            Text("切换到\"音频库\"标签页导入并选择音频")
+                .foregroundStyle(Theme.textPrimary)
+            Text("右滑回到音频库，选一段音频开始")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textSecondary)
             Spacer()
         }
     }
