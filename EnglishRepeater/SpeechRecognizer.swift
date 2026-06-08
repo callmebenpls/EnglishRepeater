@@ -109,6 +109,13 @@ final class SpeechRecognizer: ObservableObject {
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
+        // Punctuation + capitalization → readable text and real sentence boundaries.
+        request.addsPunctuation = true
+        // Prefer on-device: offline, private, and no 1-minute server limit (which is what
+        // forces the chunking in the first place).
+        if recognizer.supportsOnDeviceRecognition {
+            request.requiresOnDeviceRecognition = true
+        }
 
         currentTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
             guard let self else { return }
