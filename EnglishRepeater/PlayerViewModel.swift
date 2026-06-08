@@ -554,11 +554,23 @@ final class PlayerViewModel: NSObject, ObservableObject {
     }
 
     private func addRecognizedTrack(_ segs: [Segment]) {
-        let track = LyricTrack(name: "AI 识别 · " + Self.shortDate(), kind: .recognized, segments: segs)
+        let track = LyricTrack(name: "AI 识别 · " + Self.shortDate(), kind: .recognized,
+                               segments: Self.gapless(segs))
         lyricTracks.insert(track, at: 0)
         selectedLyricID = track.id
         applyActiveTrack()
         persistCurrentLyrics()
+    }
+
+    /// Stretch each segment's duration to the next segment's start so there are no silent
+    /// gaps — exactly how parsed LRC behaves. Without this, recognized subtitles leave gaps
+    /// between sentences where no line is "active", so the highlight/centering drops out.
+    static func gapless(_ segs: [Segment]) -> [Segment] {
+        let sorted = segs.sorted { $0.start < $1.start }
+        return sorted.enumerated().map { i, s in
+            let nextStart = i + 1 < sorted.count ? sorted[i + 1].start : s.start + max(s.duration, 2)
+            return Segment(text: s.text, start: s.start, duration: max(0.3, nextStart - s.start))
+        }
     }
 
     /// Import a .lrc as a new track for the current audio and select it.
@@ -599,7 +611,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
         }
         if let data = try? Data(contentsOf: segmentsFilePath(for: url)),
            let segs = try? JSONDecoder().decode([Segment].self, from: data), !segs.isEmpty {
-            tracks.append(LyricTrack(name: "AI 识别", kind: .recognized, segments: segs))
+            tracks.append(LyricTrack(name: "AI 识别", kind: .recognized, segments: Self.gapless(segs)))
         }
         let textURL = url.deletingPathExtension().appendingPathExtension("txt")
         if let text = try? String(contentsOf: textURL, encoding: .utf8),
@@ -694,7 +706,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
         speechRecognizer.onChunkComplete = { [weak self] segs in
             DispatchQueue.main.async {
                 guard let self else { return }
-                self.segments = segs
+                self.segments = Self.gapless(segs)
                 self.displayText = segs.map { $0.text }.joined(separator: "\n")
             }
         }
