@@ -134,16 +134,15 @@ final class AIExplainer: ObservableObject {
         guard let url = URL(string: base + "/chat/completions") else { return nil }
 
         let prompt = """
-        You are a friendly English listening coach. Listen to this short clip of fast \
-        natural English and help a Chinese learner who couldn't catch it. In clear, simple \
-        English:
-        1. Say exactly what is being said.
-        2. Point out any words that are reduced, linked, or hard to hear (e.g. "going to" \
-        sounding like "gonna").
-        3. Explain any language a learner might not know — phrasal verbs, slang, idioms, \
-        or fixed expressions — in plain words.
-        Then finish with ONE short Chinese sentence giving the overall meaning. Keep the \
-        whole answer natural and under about 30 seconds.
+        You are a friendly English listening coach helping a learner who couldn't catch a \
+        few seconds of fast natural English. Speak in clear, simple, SLOW English only — \
+        do NOT use any Chinese. Cover exactly three things, briefly:
+        1. What the speaker just said.
+        2. Any tricky language — phrasal verbs, idioms, slang, or fixed expressions — \
+        explained in plain words.
+        3. How it really sounded: which words were reduced, linked, or swallowed \
+        (for example "going to" sounding like "gonna").
+        Keep it natural and under about 30 seconds. Speak slowly and clearly.
         """
 
         let body: [String: Any] = [

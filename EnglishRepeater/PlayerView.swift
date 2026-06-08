@@ -161,11 +161,11 @@ struct PlayerView: View {
             // Tier 2 — secondary pills
             HStack(spacing: 10) {
                 pill(icon: "repeat.1", label: "循环",
-                     on: vm.loopingSegmentIndex != nil,
-                     disabled: vm.duration == 0 || vm.segments.isEmpty) { vm.toggleRepeatSentence() }
+                     on: vm.isLooping,
+                     disabled: vm.duration == 0) { vm.toggleRepeatSentence() }
                 pill(icon: "sparkles", label: "AI 讲解",
                      on: vm.aiState != .idle,
-                     disabled: vm.duration == 0 || vm.segments.isEmpty) { vm.aiExplain() }
+                     disabled: vm.duration == 0) { vm.aiExplain() }
                 speedPill
             }
         }
@@ -291,8 +291,8 @@ private struct PlaybackPane: View {
                         .id(idx)
                         .contentShape(Rectangle())
                         .onTapGesture {
+                            vm.clearLoopIfActive()   // deliberate seek cancels the 5s loop
                             vm.seek(to: seg.start)
-                            if vm.loopingSegmentIndex != nil { vm.loopingSegmentIndex = idx }
                             if !vm.isPlaying { vm.play() }
                         }
                 }
@@ -310,6 +310,7 @@ private struct PlaybackPane: View {
                         .contentShape(Rectangle())
                         .onTapGesture {
                             guard vm.duration > 0, !lines.isEmpty else { return }
+                            vm.clearLoopIfActive()
                             vm.seek(to: vm.duration * Double(idx) / Double(lines.count))
                             if !vm.isPlaying { vm.play() }
                         }

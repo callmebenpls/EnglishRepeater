@@ -35,7 +35,7 @@ enum ButtonAction: Codable, Hashable, Equatable {
         case .none:                return "无动作"
         case .togglePlay:          return "暂停 / 播放"
         case .aiExplain:           return "AI 听这句并讲解"
-        case .repeatSentence:      return "循环当前句"
+        case .repeatSentence:      return "循环最近5秒"
         case .skipBack(let s):     return "后退 \(s) 秒"
         case .skipForward(let s):  return "前进 \(s) 秒"
         }
@@ -133,7 +133,11 @@ final class PlayerViewModel: NSObject, ObservableObject {
     @Published var subtitleProgress = ""
     @Published var subtitleSource: SubtitleSource = .none
     /// Index into `segments` of the sentence currently being looped, or nil if not looping.
-    @Published var loopingSegmentIndex: Int?
+    /// True while the user's 5-second loop is active (drives the loop pill highlight).
+    @Published var isLooping = false
+    /// The time window currently being looped — used by BOTH the user loop and the AI
+    /// slow-loop-while-waiting. nil = not looping.
+    private var loopRange: ClosedRange<TimeInterval>?
     /// Drives the AI-explain UI (button, sheet, indicators).
     @Published var aiState: AIExplainState = .idle
 
@@ -151,7 +155,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
     private var aiVoiceStartedAt: Date?
 
     // AI-explain in-flight bookkeeping
-    private var aiSegment: Segment?
+    private var aiReturnTime: TimeInterval = 0   // where to seek back after AI / cancel
     private var aiPendingAudio: Data?       // explanation audio waiting for a loop boundary
     private var aiRateBeforeWait: Float = 1.0
 
@@ -425,14 +429,14 @@ final class PlayerViewModel: NSObject, ObservableObject {
         isPlaying = false
         currentTime = 0
         duration = 0
-        loopingSegmentIndex = nil
+        loopRange = nil
+        isLooping = false
         aiExplainer.cancel()
         cueSynth.stopSpeaking(at: .immediate)
         recordAIVoiceTime()
         aiVoicePlayer?.stop()
         aiVoicePlayer = nil
         aiPendingAudio = nil
-        aiSegment = nil
         aiState = .idle
         stopTimer()
     }
@@ -710,11 +714,10 @@ final class PlayerViewModel: NSObject, ObservableObject {
                 self.stats.record(seconds: 0.25)
             }
 
-            // Sentence-loop: jump back to the sentence start when it ends.
-            if let li = self.loopingSegmentIndex, li < self.segments.count {
-                let seg = self.segments[li]
-                let end = seg.start + seg.duration
-                if player.currentTime >= end - 0.04 || player.currentTime < seg.start - 0.5 {
+            // Time-window loop: jump back to the window start when it ends. Drives both the
+            // user's 5s loop and the AI slow-loop-while-waiting.
+            if let r = self.loopRange {
+                if player.currentTime >= r.upperBound - 0.04 || player.currentTime < r.lowerBound - 0.5 {
                     // If an AI explanation arrived during the wait, play it at the boundary
                     // instead of looping again — avoids cutting a word mid-flow.
                     if let pending = self.aiPendingAudio {
@@ -725,8 +728,8 @@ final class PlayerViewModel: NSObject, ObservableObject {
                         self.startAIPlayback(pending)
                         return
                     }
-                    player.currentTime = seg.start
-                    self.currentTime = seg.start
+                    player.currentTime = r.lowerBound
+                    self.currentTime = r.lowerBound
                 }
             }
 
@@ -820,46 +823,48 @@ final class PlayerViewModel: NSObject, ObservableObject {
             speakCue("AI is not set up yet.")
             return
         }
-        guard !segments.isEmpty, let idx = currentSegmentIndex() else {
-            aiState = .error("这一段没有字幕,无法解析")
-            speakCue("No transcript here.")
+        guard duration > 0, let sourceURL = currentItem?.resolvedURL else {
+            aiState = .error("没有可解析的音频")
+            speakCue("Nothing to explain yet.")
             return
         }
 
-        let seg = segments[idx]
-        let sentence = seg.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        aiSegment = seg
+        // Fixed window around the play head: 5s before, 3s after. Lyrics-independent.
+        let start = max(0, currentTime - 5)
+        let end = min(duration, currentTime + 3)
+        guard end - start > 0.5 else {
+            aiState = .error("音频太短")
+            speakCue("That clip is too short.")
+            return
+        }
+        aiReturnTime = start
         aiPendingAudio = nil
         aiState = .preparing
 
-        // Cache hit → skip the wait entirely.
-        if let cached = aiExplainer.cachedExplanation(for: sentence) {
+        // Cache by item + time window (no lyrics text to key on).
+        let cacheKey = "\(currentItem?.id.uuidString ?? "")@\(Int(start))-\(Int(end))"
+        if let cached = aiExplainer.cachedExplanation(for: cacheKey) {
             pause()
             aiState = .speaking(text: cached.text, pending: false)
             startAIPlayback(cached.audio)
             return
         }
 
-        guard let sourceURL = currentItem?.resolvedURL else {
-            failAI("无法读取音频文件")
-            return
-        }
-
-        // Begin the slow-loop from the sentence start while we wait.
+        // Begin the slow-loop over the window while we wait.
         aiRateBeforeWait = playbackRate
-        loopingSegmentIndex = idx
-        seek(to: seg.start)
+        loopRange = start...end
+        seek(to: start)
         player?.rate = 0.6
         if !isPlaying { play() }
         aiState = .waiting
 
-        extractClip(from: sourceURL, start: seg.start, duration: seg.duration) { [weak self] clip in
+        extractClip(from: sourceURL, start: start, duration: end - start) { [weak self] clip in
             guard let self else { return }
             guard case .waiting = self.aiState, let clip else {
                 if self.aiState != .idle { self.failAI("音频裁剪失败") }
                 return
             }
-            self.aiExplainer.explain(audioClip: clip, sentence: sentence) { [weak self] result in
+            self.aiExplainer.explain(audioClip: clip, sentence: cacheKey) { [weak self] result in
                 guard let self else { return }
                 guard case .waiting = self.aiState else { return }  // cancelled meanwhile
                 switch result {
@@ -882,28 +887,27 @@ final class PlayerViewModel: NSObject, ObservableObject {
         aiVoicePlayer?.stop()
         aiVoicePlayer = nil
         aiPendingAudio = nil
-        loopingSegmentIndex = nil
+        loopRange = nil
         player?.rate = aiRateBeforeWait
-        if let seg = aiSegment { seek(to: seg.start) }
-        aiSegment = nil
+        seek(to: aiReturnTime)
         aiState = .idle
         if !isPlaying { play() }
     }
 
     private func failAI(_ message: String) {
-        loopingSegmentIndex = nil
+        loopRange = nil
         aiPendingAudio = nil
         player?.rate = aiRateBeforeWait
         aiState = .error(message)
         speakCue("Sorry, the A I didn't respond.")
-        // Resume the original sentence so the user isn't left in silence.
-        if let seg = aiSegment { seek(to: seg.start) }
+        // Resume from the window start so the user isn't left in silence.
+        seek(to: aiReturnTime)
         if !isPlaying { play() }
     }
 
-    /// Stop looping, play the AI's spoken explanation, then replay the sentence normally.
+    /// Stop looping, play the AI's spoken explanation, then replay the clip normally.
     private func startAIPlayback(_ audio: Data?) {
-        loopingSegmentIndex = nil
+        loopRange = nil
         player?.pause()
         player?.rate = aiRateBeforeWait
         isPlaying = false
@@ -928,13 +932,12 @@ final class PlayerViewModel: NSObject, ObservableObject {
         }
     }
 
-    /// Called when the AI voice finishes (or had no audio): replay the sentence, continue.
+    /// Called when the AI voice finishes (or had no audio): replay the clip, continue.
     private func finishAIAndResume() {
         recordAIVoiceTime()
         aiVoicePlayer = nil
         aiState = .idle
-        if let seg = aiSegment { seek(to: seg.start) }
-        aiSegment = nil
+        seek(to: aiReturnTime)
         play()
     }
 
@@ -1018,28 +1021,32 @@ final class PlayerViewModel: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Sentence Loop
+    // MARK: - Loop (fixed 5s window)
 
-    /// Index of the sentence that is playing right now (latest segment whose start has passed).
-    private func currentSegmentIndex() -> Int? {
-        guard !segments.isEmpty else { return nil }
-        var idx: Int?
-        for (i, seg) in segments.enumerated() {
-            if seg.start <= currentTime + 0.05 { idx = i } else { break }
-        }
-        return idx ?? 0
-    }
-
-    /// Toggle looping of the current sentence. Tap once to start, again to stop.
+    /// Toggle looping the last 5 seconds. Tap once to start, again to stop. Independent of
+    /// lyrics — loops `[currentTime − 5s, currentTime]`.
     func toggleRepeatSentence() {
-        if loopingSegmentIndex != nil {
-            loopingSegmentIndex = nil
+        if isLooping {
+            isLooping = false
+            loopRange = nil
             return
         }
-        guard let idx = currentSegmentIndex() else { return }
-        loopingSegmentIndex = idx
-        seek(to: segments[idx].start)
+        guard duration > 0 else { return }
+        let end = currentTime
+        let start = max(0, end - 5)
+        guard end - start > 0.3 else { return }
+        loopRange = start...end
+        isLooping = true
+        seek(to: start)
         if !isPlaying { play() }
+    }
+
+    /// Cancel the user loop if active (used when the user deliberately seeks elsewhere).
+    func clearLoopIfActive() {
+        if isLooping {
+            isLooping = false
+            loopRange = nil
+        }
     }
 
     // MARK: - Now Playing Info
