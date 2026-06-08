@@ -617,9 +617,10 @@ struct MoveToFolderSheet: View {
 
 // MARK: - Right-edge push gesture
 
-/// A screen-edge pan from the RIGHT that fires `action` — used to swipe-left into the
-/// Player. Attached to the window so it works over the List without intercepting taps or
-/// the rows' own (mid-screen) swipe actions.
+/// A leftward swipe that begins near the RIGHT edge fires `action` — used to swipe into the
+/// Player. Uses a plain pan (not the narrow ~20pt system edge recognizer) with a wider
+/// ~64pt start zone and a low threshold, so it's much more sensitive. Still edge-anchored,
+/// so it won't clash with the rows' mid-screen swipe-to-delete/move. Attached to the window.
 private struct RightEdgePushGesture: UIViewRepresentable {
     var action: () -> Void
 
@@ -630,11 +631,12 @@ private struct RightEdgePushGesture: UIViewRepresentable {
         view.backgroundColor = .clear
         DispatchQueue.main.async { [weak view] in
             guard let window = view?.window, context.coordinator.gesture == nil else { return }
-            let g = UIScreenEdgePanGestureRecognizer(target: context.coordinator,
-                                                     action: #selector(Coordinator.handle(_:)))
-            g.edges = .right
+            let g = UIPanGestureRecognizer(target: context.coordinator,
+                                           action: #selector(Coordinator.handle(_:)))
+            g.delegate = context.coordinator
             window.addGestureRecognizer(g)
             context.coordinator.gesture = g
+            context.coordinator.window = window
         }
         return view
     }
@@ -643,12 +645,38 @@ private struct RightEdgePushGesture: UIViewRepresentable {
         context.coordinator.action = action
     }
 
-    final class Coordinator: NSObject {
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var action: () -> Void
-        weak var gesture: UIScreenEdgePanGestureRecognizer?
+        weak var gesture: UIPanGestureRecognizer?
+        weak var window: UIWindow?
+        private var fired = false
         init(action: @escaping () -> Void) { self.action = action }
-        @objc func handle(_ g: UIScreenEdgePanGestureRecognizer) {
-            if g.state == .recognized { action() }
+
+        // Only start when the touch begins within ~64pt of the right edge and moves left.
+        func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
+            guard let window, let pan = g as? UIPanGestureRecognizer else { return false }
+            let start = pan.location(in: window)
+            guard start.x > window.bounds.width - 64 else { return false }
+            let v = pan.velocity(in: window)
+            return v.x < 0 && abs(v.x) > abs(v.y)
+        }
+        func gestureRecognizer(_ g: UIGestureRecognizer,
+                               shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+
+        @objc func handle(_ g: UIPanGestureRecognizer) {
+            guard let window else { return }
+            switch g.state {
+            case .began:
+                fired = false
+            case .changed:
+                let t = g.translation(in: window)
+                if !fired, t.x < -28, abs(t.x) > abs(t.y) {   // low threshold → sensitive
+                    fired = true
+                    action()
+                }
+            default:
+                break
+            }
         }
     }
 }
