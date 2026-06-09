@@ -150,9 +150,11 @@ struct PlayerView: View {
                 pill(icon: "repeat.1", label: "循环",
                      on: vm.isLooping,
                      disabled: vm.duration == 0) { vm.toggleRepeatSentence() }
-                pill(icon: "sparkles", label: "AI 讲解",
-                     on: vm.aiState != .idle,
-                     disabled: vm.duration == 0) { vm.aiExplain() }
+                if Features.aiEnabled {
+                    pill(icon: "sparkles", label: "AI 讲解",
+                         on: vm.aiState != .idle,
+                         disabled: vm.duration == 0) { vm.aiExplain() }
+                }
                 speedPill
             }
         }

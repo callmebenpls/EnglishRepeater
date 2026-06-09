@@ -38,8 +38,10 @@ struct SettingsView: View {
                 }
                 .listRowBackground(Theme.card)
 
-                aiSection
-                    .listRowBackground(Theme.card)
+                if Features.aiEnabled {
+                    aiSection
+                        .listRowBackground(Theme.card)
+                }
             }
             .scrollContentBackground(.hidden)
             .background(Theme.canvas.ignoresSafeArea())
@@ -123,8 +125,12 @@ struct SettingsView: View {
 
     // MARK: - Picker Row
     private func actionPicker(title: String, binding: Binding<ButtonAction>) -> some View {
-        Picker(title, selection: binding) {
-            ForEach(ButtonAction.allCases, id: \.displayName) { action in
+        let actions = ButtonAction.allCases.filter { action in
+            if case .aiExplain = action { return Features.aiEnabled }   // hide AI mapping in v1
+            return true
+        }
+        return Picker(title, selection: binding) {
+            ForEach(actions, id: \.displayName) { action in
                 Text(action.displayName).tag(action)
             }
         }

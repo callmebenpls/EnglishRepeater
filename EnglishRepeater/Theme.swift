@@ -1,5 +1,13 @@
 import SwiftUI
 
+/// Build-time feature flags.
+enum Features {
+    /// AI lecture is hidden for the v1 App Store release — the BYO-key model isn't ready
+    /// for general users (needs a backend + privacy policy). The code stays; only the UI
+    /// entry points are gated. Flip to true once a managed backend ships.
+    static let aiEnabled = false
+}
+
 /// Warm & encouraging design tokens. Centralized so every screen shares one identity:
 /// cream canvas, coral→amber accent, soft borders. Light-first (the app's listening
 /// context is daytime study); a dark variant can layer on later.
