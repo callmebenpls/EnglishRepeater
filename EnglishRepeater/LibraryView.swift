@@ -79,8 +79,8 @@ struct LibraryView: View {
             .sheet(item: $pendingImport) { plan in
                 ImportReviewSheet(plan: plan) { folderID in
                     let n = vm.commitImport(plan, toFolder: folderID)
-                    let where_ = folderID.flatMap { id in vm.folders.first { $0.id == id }?.name } ?? "未分类"
-                    showToast("已导入 \(n) 个到 \(where_)")
+                    let where_ = folderID.flatMap { id in vm.folders.first { $0.id == id }?.name } ?? String(localized: "未分类")
+                    showToast(String(localized: "已导入 \(n) 个到 \(where_)"))
                     if folderID != nil { expanded.insert(folderID!.uuidString) } else { expanded.insert(unsortedKey) }
                 }
                 .environmentObject(vm)
@@ -88,7 +88,7 @@ struct LibraryView: View {
             .sheet(item: $movingItem) { item in
                 MoveToFolderSheet(item: item) { folderID in
                     vm.moveItem(item, toFolder: folderID)
-                    showToast("已移动")
+                    showToast(String(localized: "已移动"))
                 }
                 .environmentObject(vm)
             }
@@ -130,7 +130,7 @@ struct LibraryView: View {
     private func handlePicked(_ urls: [URL]) {
         let plan = vm.prepareImport(urls: urls)
         if plan.candidates.isEmpty {
-            showToast(urls.isEmpty ? "未选择文件" : "没有可导入的音频")
+            showToast(urls.isEmpty ? String(localized: "未选择文件") : String(localized: "没有可导入的音频"))
         } else {
             pendingImport = plan
         }
@@ -236,7 +236,7 @@ struct LibraryView: View {
                         .font(.system(size: 14.5, weight: .semibold))
                         .foregroundStyle(isCurrent ? Theme.accent : Theme.textPrimary)
                         .lineLimit(1)
-                    Text(isCurrent ? "正在播放 · \(progressLabel(item))" : progressLabel(item))
+                    Text(isCurrent ? String(localized: "正在播放") + " · " + progressLabel(item) : progressLabel(item))
                         .font(.caption2)
                         .foregroundStyle(isCurrent ? Theme.accent.opacity(0.8) : Theme.textSecondary)
                 }
@@ -306,7 +306,7 @@ struct LibraryView: View {
             return String(format: "%d:%02d", Int(t) / 60, Int(t) % 60)
         }
         if item.duration > 0 { return "\(fmt(item.progress)) / \(fmt(item.duration))" }
-        return "未播放"
+        return String(localized: "未播放")
     }
 
     private func aggregateProgress(_ items: [LibraryItem]) -> Double {
@@ -425,7 +425,7 @@ struct ImportReviewSheet: View {
     @State private var newFolderName = ""
 
     private var destinationName: String {
-        destination.flatMap { id in vm.folders.first { $0.id == id }?.name } ?? "未分类"
+        destination.flatMap { id in vm.folders.first { $0.id == id }?.name } ?? String(localized: "未分类")
     }
 
     var body: some View {
@@ -526,7 +526,7 @@ struct ImportReviewSheet: View {
                 onCommit(destination)
                 dismiss()
             } label: {
-                Text(plan.newCount > 0 ? "导入 \(plan.newCount) 个音频" : "没有可导入的音频")
+                Text(plan.newCount > 0 ? String(localized: "导入 \(plan.newCount) 个音频") : String(localized: "没有可导入的音频"))
                     .font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(15)
                     .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Theme.accentGradient))
@@ -543,8 +543,8 @@ struct ImportReviewSheet: View {
 
     private var subline: String {
         var parts: [String] = []
-        if plan.withSubtitleCount > 0 { parts.append("\(plan.withSubtitleCount) 个含字幕") }
-        if plan.duplicateCount > 0 { parts.append("\(plan.duplicateCount) 个重复已跳过") }
+        if plan.withSubtitleCount > 0 { parts.append(String(localized: "\(plan.withSubtitleCount) 个含字幕")) }
+        if plan.duplicateCount > 0 { parts.append(String(localized: "\(plan.duplicateCount) 个重复已跳过")) }
         return parts.joined(separator: " · ")
     }
 }
@@ -566,7 +566,7 @@ struct MoveToFolderSheet: View {
                 Theme.canvas.ignoresSafeArea()
                 List {
                     Section {
-                        row(name: "未分类", icon: "tray", color: Theme.folderColors.last!,
+                        row(name: String(localized: "未分类"), icon: "tray", color: Theme.folderColors.last!,
                             selected: item.folderID == nil) { pick(nil) }
                         ForEach(vm.folders.sorted { $0.order < $1.order }) { f in
                             row(name: f.name, icon: Theme.folderIcons[f.iconIndex % Theme.folderIcons.count],

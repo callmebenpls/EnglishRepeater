@@ -19,8 +19,8 @@ struct LyricTrack: Identifiable, Codable, Equatable {
         var tag: String {
             switch self {
             case .lrc: return "LRC"
-            case .recognized: return "AI 识别"
-            case .plainText: return "文本"
+            case .recognized: return String(localized: "AI 识别")
+            case .plainText: return String(localized: "文本")
             }
         }
     }

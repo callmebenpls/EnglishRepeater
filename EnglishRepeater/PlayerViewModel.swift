@@ -32,12 +32,12 @@ enum ButtonAction: Codable, Hashable, Equatable {
 
     var displayName: String {
         switch self {
-        case .none:                return "无动作"
-        case .togglePlay:          return "暂停 / 播放"
-        case .aiExplain:           return "AI 听这句并讲解"
-        case .repeatSentence:      return "循环最近5秒"
-        case .skipBack(let s):     return "后退 \(s) 秒"
-        case .skipForward(let s):  return "前进 \(s) 秒"
+        case .none:                return String(localized: "无动作")
+        case .togglePlay:          return String(localized: "暂停 / 播放")
+        case .aiExplain:           return String(localized: "AI 听这句并讲解")
+        case .repeatSentence:      return String(localized: "循环最近5秒")
+        case .skipBack(let s):     return String(localized: "后退 \(s) 秒")
+        case .skipForward(let s):  return String(localized: "前进 \(s) 秒")
         }
     }
 
@@ -83,10 +83,10 @@ enum SubtitleSource: Equatable {
 
     var label: String {
         switch self {
-        case .none:      return "无字幕"
-        case .lrc:       return "已绑定 LRC 字幕"
-        case .generated: return "AI 识别的字幕"
-        case .plainText: return "纯文本字幕"
+        case .none:      return String(localized: "无字幕")
+        case .lrc:       return String(localized: "已绑定 LRC 字幕")
+        case .generated: return String(localized: "AI 识别的字幕")
+        case .plainText: return String(localized: "纯文本字幕")
         }
     }
 
@@ -319,7 +319,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
     func createFolder(name: String) -> Folder {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         let idx = folders.count
-        let folder = Folder(name: trimmed.isEmpty ? "新文件夹" : trimmed,
+        let folder = Folder(name: trimmed.isEmpty ? String(localized: "新文件夹") : trimmed,
                             colorIndex: idx % Theme.folderColors.count,
                             iconIndex: (idx + 1) % Theme.folderIcons.count,
                             order: idx)
@@ -554,7 +554,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
     }
 
     private func addRecognizedTrack(_ segs: [Segment]) {
-        let track = LyricTrack(name: "AI 识别 · " + Self.shortDate(), kind: .recognized,
+        let track = LyricTrack(name: String(localized: "AI 识别") + " · " + Self.shortDate(), kind: .recognized,
                                segments: Self.gapless(segs))
         lyricTracks.insert(track, at: 0)
         selectedLyricID = track.id
@@ -607,16 +607,16 @@ final class PlayerViewModel: NSObject, ObservableObject {
         var tracks: [LyricTrack] = []
         cacheLRCIfAvailable(for: url)
         if let segs = parseLRC(from: lrcCachePath(for: url)) {
-            tracks.append(LyricTrack(name: "导入字幕", kind: .lrc, segments: segs))
+            tracks.append(LyricTrack(name: String(localized: "导入字幕"), kind: .lrc, segments: segs))
         }
         if let data = try? Data(contentsOf: segmentsFilePath(for: url)),
            let segs = try? JSONDecoder().decode([Segment].self, from: data), !segs.isEmpty {
-            tracks.append(LyricTrack(name: "AI 识别", kind: .recognized, segments: Self.gapless(segs)))
+            tracks.append(LyricTrack(name: String(localized: "AI 识别"), kind: .recognized, segments: Self.gapless(segs)))
         }
         let textURL = url.deletingPathExtension().appendingPathExtension("txt")
         if let text = try? String(contentsOf: textURL, encoding: .utf8),
            !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            tracks.append(LyricTrack(name: "文本", kind: .plainText, plainText: text))
+            tracks.append(LyricTrack(name: String(localized: "文本"), kind: .plainText, plainText: text))
         }
         return LyricLibrary(selectedID: nil, tracks: tracks)
     }
@@ -719,13 +719,13 @@ final class PlayerViewModel: NSObject, ObservableObject {
                 switch result {
                 case .success(let segs):
                     if segs.isEmpty {
-                        self.subtitleProgress = "未识别到内容"
+                        self.subtitleProgress = String(localized: "未识别到内容")
                     } else {
                         self.addRecognizedTrack(segs)   // adds a new track + selects it
                     }
                 case .failure(let error):
                     if self.segments.isEmpty {
-                        self.subtitleProgress = "失败: \(error.localizedDescription)"
+                        self.subtitleProgress = String(localized: "失败") + ": \(error.localizedDescription)"
                     }
                 }
             }
@@ -875,12 +875,12 @@ final class PlayerViewModel: NSObject, ObservableObject {
         }
 
         guard aiExplainer.isConfigured else {
-            aiState = .error("请先在设置里填入 AI 接口和密钥")
+            aiState = .error(String(localized: "请先在设置里填入 AI 接口和密钥"))
             speakCue("AI is not set up yet.")
             return
         }
         guard duration > 0, let sourceURL = currentItem?.resolvedURL else {
-            aiState = .error("没有可解析的音频")
+            aiState = .error(String(localized: "没有可解析的音频"))
             speakCue("Nothing to explain yet.")
             return
         }
@@ -889,7 +889,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
         let start = max(0, currentTime - 5)
         let end = min(duration, currentTime + 3)
         guard end - start > 0.5 else {
-            aiState = .error("音频太短")
+            aiState = .error(String(localized: "音频太短"))
             speakCue("That clip is too short.")
             return
         }
@@ -917,7 +917,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
         extractClip(from: sourceURL, start: start, duration: end - start) { [weak self] clip in
             guard let self else { return }
             guard case .waiting = self.aiState, let clip else {
-                if self.aiState != .idle { self.failAI("音频裁剪失败") }
+                if self.aiState != .idle { self.failAI(String(localized: "音频裁剪失败")) }
                 return
             }
             self.aiExplainer.explain(audioClip: clip, sentence: cacheKey) { [weak self] result in
@@ -1005,8 +1005,8 @@ final class PlayerViewModel: NSObject, ObservableObject {
     }
 
     private func friendlyError(_ error: Error) -> String {
-        if (error as? URLError)?.code == .timedOut { return "AI 响应超时,请重试" }
-        if let urlErr = error as? URLError { return "网络错误: \(urlErr.localizedDescription)" }
+        if (error as? URLError)?.code == .timedOut { return String(localized: "AI 响应超时,请重试") }
+        if let urlErr = error as? URLError { return String(localized: "网络错误") + ": \(urlErr.localizedDescription)" }
         // AIError.api carries the actual server message — surface it.
         if let aiErr = error as? AIError, let msg = aiErr.errorDescription { return msg }
         return error.localizedDescription
@@ -1109,7 +1109,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
 
     private func updateNowPlayingInfo() {
         let info: [String: Any] = [
-            MPMediaItemPropertyTitle: currentFileName.isEmpty ? "英语复读机" : currentFileName,
+            MPMediaItemPropertyTitle: currentFileName.isEmpty ? String(localized: "英语复读机") : currentFileName,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: currentTime,
             MPMediaItemPropertyPlaybackDuration: duration,
             MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0

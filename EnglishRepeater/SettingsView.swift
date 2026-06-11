@@ -21,9 +21,9 @@ struct SettingsView: View {
                 .listRowBackground(Theme.card)
 
                 Section {
-                    actionPicker(title: "单击中键", binding: $vm.keyMapping.singlePress)
-                    actionPicker(title: "双击中键", binding: $vm.keyMapping.doublePress)
-                    actionPicker(title: "三击中键", binding: $vm.keyMapping.triplePress)
+                    actionPicker(title: String(localized: "单击中键"), binding: $vm.keyMapping.singlePress)
+                    actionPicker(title: String(localized: "双击中键"), binding: $vm.keyMapping.doublePress)
+                    actionPicker(title: String(localized: "三击中键"), binding: $vm.keyMapping.triplePress)
                 } footer: {
                     Text("适用于 AirPods 及有线耳机。AirPods 需在蓝牙设置中将双击/三击设为「下一首/上一首」。")
                         .font(.caption)
@@ -32,9 +32,9 @@ struct SettingsView: View {
                 .listRowBackground(Theme.card)
 
                 Section("当前映射预览") {
-                    previewRow("单击", icon: "1.circle.fill", color: Theme.accent, action: vm.keyMapping.singlePress)
-                    previewRow("双击", icon: "2.circle.fill", color: Theme.folderColors[1].fg, action: vm.keyMapping.doublePress)
-                    previewRow("三击", icon: "3.circle.fill", color: Theme.green, action: vm.keyMapping.triplePress)
+                    previewRow(String(localized: "单击"), icon: "1.circle.fill", color: Theme.accent, action: vm.keyMapping.singlePress)
+                    previewRow(String(localized: "双击"), icon: "2.circle.fill", color: Theme.folderColors[1].fg, action: vm.keyMapping.doublePress)
+                    previewRow(String(localized: "三击"), icon: "3.circle.fill", color: Theme.green, action: vm.keyMapping.triplePress)
                 }
                 .listRowBackground(Theme.card)
 
@@ -115,10 +115,10 @@ struct SettingsView: View {
             switch result {
             case .success:
                 testOK = true
-                testStatus = "连接成功 ✓"
+                testStatus = String(localized: "连接成功 ✓")
             case .failure(let error):
                 testOK = false
-                testStatus = (error as? LocalizedError)?.errorDescription ?? "失败"
+                testStatus = (error as? LocalizedError)?.errorDescription ?? String(localized: "失败")
             }
         }
     }

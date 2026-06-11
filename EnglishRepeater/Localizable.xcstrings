@@ -1,0 +1,1212 @@
+{
+  "sourceLanguage": "zh-Hans",
+  "strings": {
+    "·": {},
+    "（语音讲解中）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(spoken explanation in progress)"
+          }
+        }
+      }
+    },
+    "「%@」及其中 %lld 个音频都会被删除,无法恢复。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@” and the %2$lld audio files in it will be permanently deleted and cannot be recovered."
+          }
+        }
+      }
+    },
+    "%lld": {},
+    "%lld 个 · 新导入的会放这里": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld items · new imports go here"
+          }
+        }
+      }
+    },
+    "%lld 个 · 长按重命名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld items · long-press to rename"
+          }
+        }
+      }
+    },
+    "%lld 个含字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld with subtitles"
+          }
+        }
+      }
+    },
+    "%lld 个重复已跳过": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld duplicates skipped"
+          }
+        }
+      }
+    },
+    "5s": {},
+    "AI 听力解析": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI Listening Analysis"
+          }
+        }
+      }
+    },
+    "AI 听这句并讲解": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI listens & explains this line"
+          }
+        }
+      }
+    },
+    "AI 响应超时,请重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI response timed out, please try again"
+          }
+        }
+      }
+    },
+    "AI 接口未配置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI endpoint not configured"
+          }
+        }
+      }
+    },
+    "AI 未返回内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI returned no content"
+          }
+        }
+      }
+    },
+    "AI 正在听这一句…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI is listening to this line…"
+          }
+        }
+      }
+    },
+    "AI 讲解": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI Explain"
+          }
+        }
+      }
+    },
+    "AI 识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI Recognized"
+          }
+        }
+      }
+    },
+    "AI 识别的字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI-recognized subtitles"
+          }
+        }
+      }
+    },
+    "API Key": {},
+    "Base URL": {},
+    "min": {},
+    "三击": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Triple"
+          }
+        }
+      }
+    },
+    "三击中键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Triple-press center"
+          }
+        }
+      }
+    },
+    "保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "关闭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "创建": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create"
+          }
+        }
+      }
+    },
+    "创建并移入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create & move in"
+          }
+        }
+      }
+    },
+    "删除": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "删除文件夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete folder"
+          }
+        }
+      }
+    },
+    "删除文件夹？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete folder?"
+          }
+        }
+      }
+    },
+    "删除文件夹及其音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete folder and its audio"
+          }
+        }
+      }
+    },
+    "前进 %lld 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forward %lld s"
+          }
+        }
+      }
+    },
+    "单击": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Single"
+          }
+        }
+      }
+    },
+    "单击中键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Single-press center"
+          }
+        }
+      }
+    },
+    "即将播放讲解…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About to play the explanation…"
+          }
+        }
+      }
+    },
+    "双击": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double"
+          }
+        }
+      }
+    },
+    "双击中键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-press center"
+          }
+        }
+      }
+    },
+    "取消": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "右滑回到音频库，选一段音频开始": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe right to the library and pick an audio to begin"
+          }
+        }
+      }
+    },
+    "名称": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "后退 %lld 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back %lld s"
+          }
+        }
+      }
+    },
+    "失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed"
+          }
+        }
+      }
+    },
+    "字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtitles"
+          }
+        }
+      }
+    },
+    "完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "导入 .lrc 文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import .lrc file"
+          }
+        }
+      }
+    },
+    "导入 %lld 个音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import %lld audio files"
+          }
+        }
+      }
+    },
+    "导入字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imported subtitles"
+          }
+        }
+      }
+    },
+    "导入音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import Audio"
+          }
+        }
+      }
+    },
+    "将导入 · %lld 个音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Will import · %lld audio files"
+          }
+        }
+      }
+    },
+    "已在库中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already in library"
+          }
+        }
+      }
+    },
+    "已导入 %lld 个到 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imported %1$lld to %2$@"
+          }
+        }
+      }
+    },
+    "已移动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moved"
+          }
+        }
+      }
+    },
+    "已绑定 LRC 字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bound LRC subtitles"
+          }
+        }
+      }
+    },
+    "已跳过 · %lld 个": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skipped · %lld"
+          }
+        }
+      }
+    },
+    "已配字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtitles included"
+          }
+        }
+      }
+    },
+    "当前映射预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current mapping preview"
+          }
+        }
+      }
+    },
+    "循环": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loop"
+          }
+        }
+      }
+    },
+    "循环最近5秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loop last 5 seconds"
+          }
+        }
+      }
+    },
+    "循环播放中 · 关闭即停止": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looping · close to stop"
+          }
+        }
+      }
+    },
+    "把当前句的音频发给 AI,它会听并讲解(默认 OpenAI gpt-audio-mini)。把此动作映射到耳机按键,或用播放页的「AI 讲解」按钮触发。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send the current sentence's audio to the AI; it listens and explains (default: OpenAI gpt-audio-mini). Map this action to an earbud button, or trigger it with the “AI Explain” button on the player."
+          }
+        }
+      }
+    },
+    "搜索音频...": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search audio..."
+          }
+        }
+      }
+    },
+    "放到文件夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Put in folder"
+          }
+        }
+      }
+    },
+    "文件夹名称": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folder name"
+          }
+        }
+      }
+    },
+    "文本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text"
+          }
+        }
+      }
+    },
+    "新建文件夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Folder"
+          }
+        }
+      }
+    },
+    "新建文件夹…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New folder…"
+          }
+        }
+      }
+    },
+    "新文件夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New folder"
+          }
+        }
+      }
+    },
+    "无动作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No action"
+          }
+        }
+      }
+    },
+    "无字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No subtitles"
+          }
+        }
+      }
+    },
+    "无字幕 · 可稍后生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No subtitles · can generate later"
+          }
+        }
+      }
+    },
+    "无时间轴": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No timing"
+          }
+        }
+      }
+    },
+    "无法读取音频文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read the audio file"
+          }
+        }
+      }
+    },
+    "暂停 / 播放": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause / Play"
+          }
+        }
+      }
+    },
+    "未分类": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsorted"
+          }
+        }
+      }
+    },
+    "未播放": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not played"
+          }
+        }
+      }
+    },
+    "未识别到内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No content recognized"
+          }
+        }
+      }
+    },
+    "未选择文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No file selected"
+          }
+        }
+      }
+    },
+    "模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model"
+          }
+        }
+      }
+    },
+    "正在以 0.6× 慢速循环这一句,你可以先自己听听看。AI 一回复就会念给你听。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looping this line slowly at 0.6×, so you can try listening first. As soon as the AI replies, it'll read it to you."
+          }
+        }
+      }
+    },
+    "正在准备...": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing..."
+          }
+        }
+      }
+    },
+    "正在播放": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now Playing"
+          }
+        }
+      }
+    },
+    "没有可导入的音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No audio to import"
+          }
+        }
+      }
+    },
+    "没有可解析的音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No audio to analyze"
+          }
+        }
+      }
+    },
+    "测试连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test connection"
+          }
+        }
+      }
+    },
+    "点击右上角 + 导入音频，或从其他 App 用「打开方式」分享": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap + in the top right to import audio, or share from another app via “Open With”"
+          }
+        }
+      }
+    },
+    "点左上角生成字幕，或导入同名 .lrc 字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the top left to generate subtitles, or import a matching .lrc file"
+          }
+        }
+      }
+    },
+    "用 AI 生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate with AI"
+          }
+        }
+      }
+    },
+    "移到": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move"
+          }
+        }
+      }
+    },
+    "移到文件夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to Folder"
+          }
+        }
+      }
+    },
+    "空文件夹 · 从其他音频「移到」这里": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty folder · “Move” audio here from elsewhere"
+          }
+        }
+      }
+    },
+    "纯文本字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plain-text subtitles"
+          }
+        }
+      }
+    },
+    "网络错误": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network error"
+          }
+        }
+      }
+    },
+    "耳机按键映射": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Earbud Button Mapping"
+          }
+        }
+      }
+    },
+    "英语复读机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English Repeater"
+          }
+        }
+      }
+    },
+    "英语精听": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English Listening"
+          }
+        }
+      }
+    },
+    "设定苹果耳机中键 单击/双击/三击 对应的动作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set the actions for single / double / triple press of the Apple earbud center button."
+          }
+        }
+      }
+    },
+    "设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "识别中...": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognizing..."
+          }
+        }
+      }
+    },
+    "语音识别不可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech recognition unavailable"
+          }
+        }
+      }
+    },
+    "请先在设置里填入 AI 接口和密钥": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please enter the AI endpoint and key in Settings first"
+          }
+        }
+      }
+    },
+    "还没有在播放": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing playing yet"
+          }
+        }
+      }
+    },
+    "还没有音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No audio yet"
+          }
+        }
+      }
+    },
+    "这条音频还没有字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This audio has no subtitles yet"
+          }
+        }
+      }
+    },
+    "连接成功 ✓": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected ✓"
+          }
+        }
+      }
+    },
+    "适用于 AirPods 及有线耳机。AirPods 需在蓝牙设置中将双击/三击设为「下一首/上一首」。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Works with AirPods and wired earbuds. For AirPods, set double/triple press to “Next/Previous Track” in Bluetooth settings."
+          }
+        }
+      }
+    },
+    "重命名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        }
+      }
+    },
+    "重命名文件夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename Folder"
+          }
+        }
+      }
+    },
+    "重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        }
+      }
+    },
+    "音频太短": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio too short"
+          }
+        }
+      }
+    },
+    "音频库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Library"
+          }
+        }
+      }
+    },
+    "音频裁剪失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to trim audio"
+          }
+        }
+      }
+    },
+    "通过精听，掌握英语": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Master English by listening"
+          }
+        }
+      }
+    },
+    "一次一句，把每个细节都听清。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One sentence at a time — catch every detail."
+          }
+        }
+      }
+    },
+    "添加你的音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add your audio"
+          }
+        }
+      }
+    },
+    "点击 + 导入，或在任意 App 里用「打开方式」分享过来。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap + to import, or share from any app with “Open With”."
+          }
+        }
+      }
+    },
+    "用你的方式听": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listen your way"
+          }
+        }
+      }
+    },
+    "点按任意一句即可跳转并循环；放慢速度，听清每个词。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap any line to jump and loop it. Slow it down to catch every word."
+          }
+        }
+      }
+    },
+    "解放双手": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hands-free control"
+          }
+        }
+      }
+    },
+    "把单击 / 双击 / 三击耳机按键，映射为播放、循环或跳转。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Map single / double / triple press of your earbud button to play, repeat, or skip."
+          }
+        }
+      }
+    },
+    "开始使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get started"
+          }
+        }
+      }
+    },
+    "下一步": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next"
+          }
+        }
+      }
+    },
+    "跳过": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip"
+          }
+        }
+      }
+    },
+    "播放": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play"
+          }
+        }
+      }
+    },
+    "跳转": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jump"
+          }
+        }
+      }
+    },
+    "正在下载语音模型…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading speech model…"
+          }
+        }
+      }
+    },
+    "用 AI 生成字幕（本机离线）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate subtitles with AI (on-device)"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

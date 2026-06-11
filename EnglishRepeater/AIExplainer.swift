@@ -221,8 +221,8 @@ enum AIError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notConfigured: return "AI 接口未配置"
-        case .empty:         return "AI 未返回内容"
+        case .notConfigured: return String(localized: "AI 接口未配置")
+        case .empty:         return String(localized: "AI 未返回内容")
         case .api(let m):    return m
         }
     }

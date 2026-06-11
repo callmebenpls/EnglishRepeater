@@ -15,12 +15,15 @@
 		B006 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A006 /* PlayerView.swift */; };
 		B007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A008 /* Assets.xcassets */; };
 		B014 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A015 /* PrivacyInfo.xcprivacy */; };
+		B015 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A016 /* Localizable.xcstrings */; };
+		B016 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A017 /* InfoPlist.xcstrings */; };
 		B008 /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A009 /* SpeechRecognizer.swift */; };
 		B009 /* AIExplainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A010 /* AIExplainer.swift */; };
 		B010 /* ListeningStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = A011 /* ListeningStats.swift */; };
 		B011 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A012 /* Theme.swift */; };
 		B012 /* Folder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A013 /* Folder.swift */; };
 		B013 /* LyricTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A014 /* LyricTrack.swift */; };
+		B017 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A018 /* OnboardingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,12 +37,15 @@
 		A007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A015 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A016 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		A017 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		A009 /* SpeechRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
 		A010 /* AIExplainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIExplainer.swift; sourceTree = "<group>"; };
 		A011 /* ListeningStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningStats.swift; sourceTree = "<group>"; };
 		A012 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A013 /* Folder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Folder.swift; sourceTree = "<group>"; };
 		A014 /* LyricTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricTrack.swift; sourceTree = "<group>"; };
+		A018 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +74,7 @@
 				A004 /* LibraryItem.swift */,
 				A005 /* LibraryView.swift */,
 				A006 /* PlayerView.swift */,
+				A018 /* OnboardingView.swift */,
 				A002 /* PlayerViewModel.swift */,
 				A003 /* SettingsView.swift */,
 				A009 /* SpeechRecognizer.swift */,
@@ -78,6 +85,8 @@
 				A014 /* LyricTrack.swift */,
 				A008 /* Assets.xcassets */,
 				A015 /* PrivacyInfo.xcprivacy */,
+				A016 /* Localizable.xcstrings */,
+				A017 /* InfoPlist.xcstrings */,
 				A007 /* Info.plist */,
 			);
 			path = EnglishRepeater;
@@ -128,11 +137,12 @@
 			};
 			buildConfigurationList = XCL000 /* Build configuration list for PBXProject "EnglishRepeater" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
+			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
 			);
 			mainGroup = G000;
 			productRefGroup = G002 /* Products */;
@@ -151,6 +161,8 @@
 			files = (
 				B007 /* Assets.xcassets in Resources */,
 				B014 /* PrivacyInfo.xcprivacy in Resources */,
+				B015 /* Localizable.xcstrings in Resources */,
+				B016 /* InfoPlist.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -165,6 +177,7 @@
 				B004 /* LibraryItem.swift in Sources */,
 				B005 /* LibraryView.swift in Sources */,
 				B006 /* PlayerView.swift in Sources */,
+				B017 /* OnboardingView.swift in Sources */,
 				B002 /* PlayerViewModel.swift in Sources */,
 				B003 /* SettingsView.swift in Sources */,
 				B008 /* SpeechRecognizer.swift in Sources */,

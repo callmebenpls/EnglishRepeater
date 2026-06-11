@@ -147,11 +147,11 @@ struct PlayerView: View {
 
             // Tier 2 — secondary pills
             HStack(spacing: 10) {
-                pill(icon: "repeat.1", label: "循环",
+                pill(icon: "repeat.1", label: String(localized: "循环"),
                      on: vm.isLooping,
                      disabled: vm.duration == 0) { vm.toggleRepeatSentence() }
                 if Features.aiEnabled {
-                    pill(icon: "sparkles", label: "AI 讲解",
+                    pill(icon: "sparkles", label: String(localized: "AI 讲解"),
                          on: vm.aiState != .idle,
                          disabled: vm.duration == 0) { vm.aiExplain() }
                 }
@@ -454,12 +454,12 @@ struct AIExplainSheet: View {
             HStack(spacing: 8) {
                 Image(systemName: pending ? "hourglass" : "speaker.wave.2.fill")
                     .foregroundStyle(Theme.accent)
-                Text(pending ? "即将播放讲解…" : "循环播放中 · 关闭即停止")
+                Text(pending ? String(localized: "即将播放讲解…") : String(localized: "循环播放中 · 关闭即停止"))
                     .font(.subheadline)
                     .foregroundStyle(Theme.textSecondary)
             }
             ScrollView {
-                Text(text.isEmpty ? "（语音讲解中）" : text)
+                Text(text.isEmpty ? String(localized: "（语音讲解中）") : text)
                     .font(.body)
                     .foregroundStyle(Theme.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -520,7 +520,7 @@ struct LyricManagerSheet: View {
                             if let item = vm.currentItem { vm.generateSubtitles(for: item) }
                             dismiss()
                         } label: {
-                            Label(vm.lyricTracks.isEmpty ? "用 AI 生成字幕（本机离线，约 30–60 秒）" : "用 AI 生成",
+                            Label(vm.lyricTracks.isEmpty ? String(localized: "用 AI 生成字幕（本机离线）") : String(localized: "用 AI 生成"),
                                   systemImage: "sparkles")
                                 .foregroundStyle(Theme.accent)
                         }
@@ -551,7 +551,7 @@ struct LyricManagerSheet: View {
                 Image(systemName: icon(track.kind)).foregroundStyle(Theme.accent).frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(track.name).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.textPrimary)
-                    Text(track.kind.tag + (track.hasTiming ? "" : " · 无时间轴"))
+                    Text(track.kind.tag + (track.hasTiming ? "" : " · " + String(localized: "无时间轴")))
                         .font(.caption2).foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
