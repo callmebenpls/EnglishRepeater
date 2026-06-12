@@ -7,7 +7,7 @@ struct LibraryItem: Identifiable, Codable {
     var duration: TimeInterval
     var progress: TimeInterval
     var dateAdded: Date
-    /// Folder this audio belongs to; nil = 未分类 (unsorted). Optional so older saved
+    /// Folder this audio belongs to; nil = 默认 (unsorted). Optional so older saved
     /// libraries decode cleanly (missing key → nil).
     var folderID: UUID? = nil
 

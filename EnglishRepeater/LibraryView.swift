@@ -6,7 +6,6 @@ struct LibraryView: View {
     @Binding var page: Int
 
     @State private var showFilePicker = false
-    @State private var searchText = ""
     @State private var expanded: Set<String> = []          // folder keys that are open
     @State private var initializedExpansion = false
 
@@ -34,8 +33,6 @@ struct LibraryView: View {
                     StatsCardContainer(stats: vm.stats)
                     if vm.library.isEmpty && vm.folders.isEmpty {
                         emptyState
-                    } else if !searchText.isEmpty {
-                        searchResults
                     } else {
                         folderList
                     }
@@ -67,7 +64,6 @@ struct LibraryView: View {
                 }
             }
             .tint(Theme.accent)
-            .searchable(text: $searchText, prompt: "搜索音频...")
             .fileImporter(
                 isPresented: $showFilePicker,
                 allowedContentTypes: [.audio, UTType(filenameExtension: "lrc") ?? .data],
@@ -78,7 +74,7 @@ struct LibraryView: View {
             .sheet(item: $pendingImport) { plan in
                 ImportReviewSheet(plan: plan) { folderID in
                     let n = vm.commitImport(plan, toFolder: folderID)
-                    let where_ = folderID.flatMap { id in vm.folders.first { $0.id == id }?.name } ?? String(localized: "未分类")
+                    let where_ = folderID.flatMap { id in vm.folders.first { $0.id == id }?.name } ?? String(localized: "默认")
                     showToast(String(localized: "已导入 \(n) 个到 \(where_)"))
                     if folderID != nil { expanded.insert(folderID!.uuidString) } else { expanded.insert(unsortedKey) }
                 }
@@ -189,7 +185,7 @@ struct LibraryView: View {
                 HStack(spacing: 12) {
                     folderTile(color: Theme.folderColors.last!, icon: "tray")
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("未分类").font(.system(size: 15.5, weight: .bold)).foregroundStyle(Theme.textPrimary)
+                        Text("默认").font(.system(size: 15.5, weight: .bold)).foregroundStyle(Theme.textPrimary)
                         Text("\(items.count) 个 · 新导入的会放这里").font(.caption2).foregroundStyle(Theme.textSecondary)
                     }
                     Spacer()
@@ -302,18 +298,6 @@ struct LibraryView: View {
             Button { movingItem = item } label: { Label("移到", systemImage: "folder") }
                 .tint(Theme.accent)
         }
-    }
-
-    // MARK: - Search (flat)
-
-    private var searchResults: some View {
-        let items = vm.library.filter { $0.displayTitle.localizedCaseInsensitiveContains(searchText) }
-        return List {
-            ForEach(items) { item in itemRow(item) }
-        }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
-        .background(Theme.canvas)
     }
 
     // MARK: - Small pieces
@@ -461,12 +445,12 @@ struct ImportReviewSheet: View {
     let plan: ImportPlan
     let onCommit: (UUID?) -> Void
 
-    @State private var destination: UUID?          // nil = 未分类
+    @State private var destination: UUID?          // nil = 默认
     @State private var newFolderPresented = false
     @State private var newFolderName = ""
 
     private var destinationName: String {
-        destination.flatMap { id in vm.folders.first { $0.id == id }?.name } ?? String(localized: "未分类")
+        destination.flatMap { id in vm.folders.first { $0.id == id }?.name } ?? String(localized: "默认")
     }
 
     var body: some View {
@@ -511,7 +495,7 @@ struct ImportReviewSheet: View {
 
     private var destinationPicker: some View {
         Menu {
-            Button { destination = nil } label: { Label("未分类", systemImage: "tray") }
+            Button { destination = nil } label: { Label("默认", systemImage: "tray") }
             ForEach(vm.folders.sorted { $0.order < $1.order }) { f in
                 Button { destination = f.id } label: { Label(f.name, systemImage: Theme.folderIcons[f.iconIndex % Theme.folderIcons.count]) }
             }
@@ -607,7 +591,7 @@ struct MoveToFolderSheet: View {
                 Theme.canvas.ignoresSafeArea()
                 List {
                     Section {
-                        row(name: String(localized: "未分类"), icon: "tray", color: Theme.folderColors.last!,
+                        row(name: String(localized: "默认"), icon: "tray", color: Theme.folderColors.last!,
                             selected: item.folderID == nil) { pick(nil) }
                         ForEach(vm.folders.sorted { $0.order < $1.order }) { f in
                             row(name: f.name, icon: Theme.folderIcons[f.iconIndex % Theme.folderIcons.count],

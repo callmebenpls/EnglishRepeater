@@ -240,7 +240,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
 
     // MARK: - Library
 
-    /// Single-file entry point (Share / "open with" from other apps). Lands in 未分类.
+    /// Single-file entry point (Share / "open with" from other apps). Lands in 默认.
     func addToLibrary(url: URL) {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }

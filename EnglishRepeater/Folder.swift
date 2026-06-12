@@ -1,7 +1,7 @@
 import Foundation
 
 /// A user-created folder. One audio belongs to at most one folder (folderID on the item);
-/// items with no folder live in the implicit "未分类" bucket.
+/// items with no folder live in the implicit "默认" bucket.
 struct Folder: Identifiable, Codable, Equatable {
     let id: UUID
     var name: String

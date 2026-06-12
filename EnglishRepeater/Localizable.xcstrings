@@ -547,16 +547,6 @@
         }
       }
     },
-    "搜索音频...": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search audio..."
-          }
-        }
-      }
-    },
     "放到文件夹": {
       "localizations": {
         "en": {
@@ -673,16 +663,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pause / Play"
-          }
-        }
-      }
-    },
-    "未分类": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unsorted"
           }
         }
       }
@@ -1763,6 +1743,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Used by “Generate audio with AI”. OpenAI-compatible; the key never leaves this device."
+          }
+        }
+      }
+    },
+    "默认": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default"
           }
         }
       }
