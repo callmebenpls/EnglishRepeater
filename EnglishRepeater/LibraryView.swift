@@ -18,6 +18,9 @@ struct LibraryView: View {
     @State private var renamingFolderID: UUID?     // folder being renamed in place
     @State private var renameDraft = ""
     @FocusState private var renameFieldFocused: Bool
+    @State private var newFolderDrafting = false
+    @State private var newFolderDraft = ""
+    @FocusState private var newFolderFocused: Bool
     @State private var showGenerator = false
 
     @State private var toast: String?
@@ -128,32 +131,70 @@ struct LibraryView: View {
         .background(Theme.canvas)
     }
 
-    /// Dashed ghost row at the end of the list — creates a folder and immediately opens
-    /// the in-place name editor (same mechanism as long-press rename).
+    /// Dashed ghost row at the end of the list. Tapping it opens an inline name field —
+    /// the folder is only created on confirm (创建 / return); tapping away creates nothing.
     private var newFolderSection: some View {
         Section {
-            Button {
-                let f = vm.createFolder(name: "")
-                expanded.insert(f.id.uuidString)
-                beginRename(f)
-            } label: {
-                HStack(spacing: 6) {
-                    Spacer()
-                    Image(systemName: "plus")
-                    Text("新建文件夹")
-                    Spacer()
+            if newFolderDrafting {
+                HStack(spacing: 10) {
+                    Image(systemName: "folder.badge.plus")
+                        .foregroundStyle(Theme.accent)
+                    TextField("文件夹名称", text: $newFolderDraft)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                        .focused($newFolderFocused)
+                        .submitLabel(.done)
+                        .onSubmit { commitNewFolder() }
+                        .onAppear { newFolderFocused = true }
+                    Button("创建") { commitNewFolder() }
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(newFolderDraft.trimmingCharacters(in: .whitespaces).isEmpty
+                                         ? Theme.textTertiary : Theme.accent)
+                        .disabled(newFolderDraft.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Theme.accent)
-                .padding(.vertical, 12)
+                .padding(.vertical, 10).padding(.horizontal, 14)
                 .overlay(
                     RoundedRectangle(cornerRadius: 13, style: .continuous)
-                        .strokeBorder(Theme.accentSoft, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                        .strokeBorder(Theme.accent.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
                 )
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 8, trailing: 16))
+                .onChange(of: newFolderFocused) { focused in
+                    // Tapping elsewhere dismisses the draft without creating anything.
+                    if !focused && newFolderDrafting { newFolderDrafting = false }
+                }
+            } else {
+                Button {
+                    newFolderDraft = ""
+                    newFolderDrafting = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Spacer()
+                        Image(systemName: "plus")
+                        Text("新建文件夹")
+                        Spacer()
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                    .padding(.vertical, 12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .strokeBorder(Theme.accentSoft, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                    )
+                }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 8, trailing: 16))
             }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 8, trailing: 16))
         }
+    }
+
+    private func commitNewFolder() {
+        let name = newFolderDraft.trimmingCharacters(in: .whitespaces)
+        newFolderDrafting = false
+        newFolderFocused = false
+        guard !name.isEmpty else { return }
+        let f = vm.createFolder(name: name)
+        expanded.insert(f.id.uuidString)
     }
 
     @ViewBuilder
