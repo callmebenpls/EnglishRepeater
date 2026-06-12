@@ -15,12 +15,11 @@ struct LibraryView: View {
 
     // Move / folder management
     @State private var movingItem: LibraryItem?
-    @State private var newFolderPresented = false
-    @State private var newFolderName = ""
-    @State private var renameTarget: Folder?
-    @State private var renameText = ""
     @State private var deleteTarget: Folder?
-    @State private var folderActions: Folder?      // long-pressed folder → action sheet
+    @State private var renamingFolderID: UUID?     // folder being renamed in place
+    @State private var renameDraft = ""
+    @FocusState private var renameFieldFocused: Bool
+    @State private var showGenerator = false
 
     @State private var toast: String?
 
@@ -61,7 +60,7 @@ struct LibraryView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button { showFilePicker = true } label: { Label("导入音频", systemImage: "square.and.arrow.down") }
-                        Button { startNewFolder() } label: { Label("新建文件夹", systemImage: "folder.badge.plus") }
+                        Button { showGenerator = true } label: { Label("AI 生成音频", systemImage: "sparkles") }
                     } label: {
                         Image(systemName: "plus")
                     }
@@ -92,34 +91,14 @@ struct LibraryView: View {
                 }
                 .environmentObject(vm)
             }
-            .alert("新建文件夹", isPresented: $newFolderPresented) {
-                TextField("文件夹名称", text: $newFolderName)
-                Button("取消", role: .cancel) {}
-                Button("创建") {
-                    let f = vm.createFolder(name: newFolderName)
-                    expanded.insert(f.id.uuidString)
-                }
-            }
-            .alert("重命名文件夹", isPresented: Binding(get: { renameTarget != nil }, set: { if !$0 { renameTarget = nil } })) {
-                TextField("名称", text: $renameText)
-                Button("取消", role: .cancel) { renameTarget = nil }
-                Button("保存") {
-                    if let t = renameTarget { vm.renameFolder(t, to: renameText) }
-                    renameTarget = nil
-                }
-            }
             .alert("删除文件夹？", isPresented: Binding(get: { deleteTarget != nil }, set: { if !$0 { deleteTarget = nil } }), presenting: deleteTarget) { folder in
                 Button("删除文件夹及其音频", role: .destructive) { vm.deleteFolder(folder); deleteTarget = nil }
                 Button("取消", role: .cancel) { deleteTarget = nil }
             } message: { folder in
                 Text("「\(folder.name)」及其中 \(vm.items(in: folder.id).count) 个音频都会被删除,无法恢复。")
             }
-            .confirmationDialog(folderActions?.name ?? "", isPresented: Binding(
-                get: { folderActions != nil }, set: { if !$0 { folderActions = nil } }),
-                titleVisibility: .visible, presenting: folderActions) { folder in
-                Button("重命名") { startRename(folder) }
-                Button("删除文件夹", role: .destructive) { deleteTarget = folder }
-                Button("取消", role: .cancel) {}
+            .sheet(isPresented: $showGenerator) {
+                GenerateAudioSheet().environmentObject(vm)
             }
             .onAppear(perform: initExpansionOnce)
         }
@@ -146,10 +125,39 @@ struct LibraryView: View {
                 folderSection(folder)
             }
             unsortedSection
+            newFolderSection
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .background(Theme.canvas)
+    }
+
+    /// Dashed ghost row at the end of the list — creates a folder and immediately opens
+    /// the in-place name editor (same mechanism as long-press rename).
+    private var newFolderSection: some View {
+        Section {
+            Button {
+                let f = vm.createFolder(name: "")
+                expanded.insert(f.id.uuidString)
+                beginRename(f)
+            } label: {
+                HStack(spacing: 6) {
+                    Spacer()
+                    Image(systemName: "plus")
+                    Text("新建文件夹")
+                    Spacer()
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+                .padding(.vertical, 12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .strokeBorder(Theme.accentSoft, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                )
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 8, trailing: 16))
+        }
     }
 
     @ViewBuilder
@@ -198,8 +206,22 @@ struct LibraryView: View {
             folderTile(color: Theme.folderColors[folder.colorIndex % Theme.folderColors.count],
                        icon: Theme.folderIcons[folder.iconIndex % Theme.folderIcons.count])
             VStack(alignment: .leading, spacing: 3) {
-                Text(folder.name).font(.system(size: 15.5, weight: .bold)).foregroundStyle(Theme.textPrimary)
-                Text("\(count) 个 · 长按重命名").font(.caption2).foregroundStyle(Theme.textSecondary)
+                if renamingFolderID == folder.id {
+                    HStack(spacing: 8) {
+                        TextField("名称", text: $renameDraft)
+                            .font(.system(size: 15.5, weight: .bold))
+                            .foregroundStyle(Theme.textPrimary)
+                            .focused($renameFieldFocused)
+                            .submitLabel(.done)
+                            .onSubmit { commitRename(folder) }
+                            .onAppear { renameFieldFocused = true }
+                        Button("完成") { commitRename(folder) }
+                            .font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
+                    }
+                } else {
+                    Text(folder.name).font(.system(size: 15.5, weight: .bold)).foregroundStyle(Theme.textPrimary)
+                }
+                Text("\(count) 个").font(.caption2).foregroundStyle(Theme.textSecondary)
                 if progress > 0 {
                     ProgressView(value: progress)
                         .tint(Theme.accent)
@@ -208,13 +230,42 @@ struct LibraryView: View {
                 }
             }
             Spacer()
+            if renamingFolderID != folder.id {
+                Menu {
+                    Button { beginRename(folder) } label: { Label("重命名", systemImage: "pencil") }
+                    Button(role: .destructive) { deleteTarget = folder } label: { Label("删除文件夹", systemImage: "trash") }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.textTertiary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+            }
             chevron(expanded.contains(folder.id.uuidString))
         }
         .textCase(nil)
         .padding(.vertical, 2)
         .contentShape(Rectangle())
-        .onTapGesture { toggle(folder.id.uuidString) }
-        .onLongPressGesture { folderActions = folder }
+        .onTapGesture {
+            if renamingFolderID == nil { toggle(folder.id.uuidString) }
+        }
+        .onLongPressGesture { beginRename(folder) }
+        .onChange(of: renameFieldFocused) { focused in
+            // Tapping elsewhere drops focus → cancel without saving (return key saves).
+            if !focused && renamingFolderID == folder.id { renamingFolderID = nil }
+        }
+    }
+
+    private func beginRename(_ folder: Folder) {
+        renameDraft = folder.name
+        renamingFolderID = folder.id
+    }
+
+    private func commitRename(_ folder: Folder) {
+        vm.renameFolder(folder, to: renameDraft)
+        renamingFolderID = nil
+        renameFieldFocused = false
     }
 
     // MARK: - Item row
@@ -328,16 +379,6 @@ struct LibraryView: View {
         initializedExpansion = true
         // Open everything by default so nothing feels hidden on first run.
         expanded = Set(vm.folders.map { $0.id.uuidString } + [unsortedKey])
-    }
-
-    private func startNewFolder() {
-        newFolderName = ""
-        newFolderPresented = true
-    }
-
-    private func startRename(_ folder: Folder) {
-        renameText = folder.name
-        renameTarget = folder
     }
 
     private func showToast(_ message: String) {

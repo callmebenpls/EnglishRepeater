@@ -38,10 +38,8 @@ struct SettingsView: View {
                 }
                 .listRowBackground(Theme.card)
 
-                if Features.aiEnabled {
-                    aiSection
-                        .listRowBackground(Theme.card)
-                }
+                aiSection
+                    .listRowBackground(Theme.card)
             }
             .scrollContentBackground(.hidden)
             .background(Theme.canvas.ignoresSafeArea())
@@ -73,9 +71,23 @@ struct SettingsView: View {
                 .autocorrectionDisabled()
                 .keyboardType(.URL)
             SecureField("API Key", text: configBinding(\.apiKey))
-            TextField("模型", text: configBinding(\.model))
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
+            if Features.aiEnabled {
+                TextField("模型", text: configBinding(\.model))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            }
+            LabeledContent {
+                TextField("gpt-4o-mini", text: configBinding(\.scriptModel))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .multilineTextAlignment(.trailing)
+            } label: { Text("脚本模型") }
+            LabeledContent {
+                TextField("gpt-4o-mini-tts", text: configBinding(\.ttsModel))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .multilineTextAlignment(.trailing)
+            } label: { Text("语音模型") }
 
             Button(action: runTest) {
                 HStack {
@@ -92,9 +104,9 @@ struct SettingsView: View {
             }
             .disabled(testing)
         } header: {
-            Text("AI 听力解析")
+            Text("AI 接口")
         } footer: {
-            Text("把当前句的音频发给 AI,它会听并讲解(默认 OpenAI gpt-audio-mini)。把此动作映射到耳机按键,或用播放页的「AI 讲解」按钮触发。")
+            Text("用于「AI 生成音频」。兼容 OpenAI 接口，密钥只保存在本机。")
                 .font(.caption)
                 .foregroundStyle(Theme.textSecondary)
         }

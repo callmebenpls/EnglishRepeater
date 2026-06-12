@@ -1206,6 +1206,566 @@
           }
         }
       }
+    },
+    "AI 生成音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate audio with AI"
+          }
+        }
+      }
+    },
+    "AI 生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI Generated"
+          }
+        }
+      }
+    },
+    "脚本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Script"
+          }
+        }
+      }
+    },
+    "%lld 个": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld items"
+          }
+        }
+      }
+    },
+    "想听什么？描述场景或主题…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What do you want to hear? Describe a scene or topic…"
+          }
+        }
+      }
+    },
+    "日常闲聊": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Casual chat"
+          }
+        }
+      }
+    },
+    "美剧风对话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TV-drama dialogue"
+          }
+        }
+      }
+    },
+    "旅行": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Travel"
+          }
+        }
+      }
+    },
+    "职场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workplace"
+          }
+        }
+      }
+    },
+    "口语程度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spoken register"
+          }
+        }
+      }
+    },
+    "教科书": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Textbook"
+          }
+        }
+      }
+    },
+    "自然口语": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Natural speech"
+          }
+        }
+      }
+    },
+    "俚语拉满": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slang-heavy"
+          }
+        }
+      }
+    },
+    "时长": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duration"
+          }
+        }
+      }
+    },
+    "分钟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "min"
+          }
+        }
+      }
+    },
+    "语言点 · 想练什么（可多选）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language points · pick what to practice"
+          }
+        }
+      }
+    },
+    "习语": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Idioms"
+          }
+        }
+      }
+    },
+    "俚语": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slang"
+          }
+        }
+      }
+    },
+    "短语动词": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phrasal verbs"
+          }
+        }
+      }
+    },
+    "口语表达": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spoken phrases"
+          }
+        }
+      }
+    },
+    "密度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Density"
+          }
+        }
+      }
+    },
+    "少": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Few"
+          }
+        }
+      }
+    },
+    "中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medium"
+          }
+        }
+      }
+    },
+    "多": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Many"
+          }
+        }
+      }
+    },
+    "≈ %lld 个": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈ %lld"
+          }
+        }
+      }
+    },
+    "难度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Level"
+          }
+        }
+      }
+    },
+    "形式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format"
+          }
+        }
+      }
+    },
+    "对话 · 双声": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dialogue · two voices"
+          }
+        }
+      }
+    },
+    "独白": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monologue"
+          }
+        }
+      }
+    },
+    "语速": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pace"
+          }
+        }
+      }
+    },
+    "自然语速": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Natural pace"
+          }
+        }
+      }
+    },
+    "偏慢": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slower"
+          }
+        }
+      }
+    },
+    "声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice"
+          }
+        }
+      }
+    },
+    "角色 A": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speaker A"
+          }
+        }
+      }
+    },
+    "角色 B": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speaker B"
+          }
+        }
+      }
+    },
+    "生成脚本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate script"
+          }
+        }
+      }
+    },
+    "正在生成脚本…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writing the script…"
+          }
+        }
+      }
+    },
+    "重新生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regenerate"
+          }
+        }
+      }
+    },
+    "生成音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate audio"
+          }
+        }
+      }
+    },
+    "正在合成语音…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Synthesizing speech…"
+          }
+        }
+      }
+    },
+    "生成失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generation failed"
+          }
+        }
+      }
+    },
+    "语言点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language points"
+          }
+        }
+      }
+    },
+    "词汇": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vocabulary"
+          }
+        }
+      }
+    },
+    "表达": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expressions"
+          }
+        }
+      }
+    },
+    "学习笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Study notes"
+          }
+        }
+      }
+    },
+    "女 · 清亮自然": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Female · bright, natural"
+          }
+        }
+      }
+    },
+    "女 · 温柔": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Female · gentle"
+          }
+        }
+      }
+    },
+    "女 · 活泼": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Female · lively"
+          }
+        }
+      }
+    },
+    "中性 · 平和": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neutral · calm"
+          }
+        }
+      }
+    },
+    "男 · 沉稳": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Male · steady"
+          }
+        }
+      }
+    },
+    "男 · 低沉": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Male · deep"
+          }
+        }
+      }
+    },
+    "英音 · 叙事感": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "British · storyteller"
+          }
+        }
+      }
+    },
+    "脚本模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Script model"
+          }
+        }
+      }
+    },
+    "语音模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voice model"
+          }
+        }
+      }
+    },
+    "AI 接口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI Service"
+          }
+        }
+      }
+    },
+    "用于「AI 生成音频」。兼容 OpenAI 接口，密钥只保存在本机。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used by “Generate audio with AI”. OpenAI-compatible; the key never leaves this device."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

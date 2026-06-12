@@ -4,20 +4,23 @@ import Foundation
 /// AI-recognized one); the user picks which is shown.
 struct LyricTrack: Identifiable, Codable, Equatable {
     enum Kind: String, Codable {
+        case script       // exact script of AI-generated audio (timing by construction)
         case lrc          // imported / bonded .lrc
         case recognized   // produced by on-device recognition
         case plainText    // a .txt transcript (no timing)
 
-        /// Lower = preferred when nothing is explicitly selected. LRC > recognized > text.
+        /// Lower = preferred when nothing is explicitly selected. script > LRC > recognized > text.
         var priority: Int {
             switch self {
-            case .lrc: return 0
-            case .recognized: return 1
-            case .plainText: return 2
+            case .script: return 0
+            case .lrc: return 1
+            case .recognized: return 2
+            case .plainText: return 3
             }
         }
         var tag: String {
             switch self {
+            case .script: return String(localized: "脚本")
             case .lrc: return "LRC"
             case .recognized: return String(localized: "AI 识别")
             case .plainText: return String(localized: "文本")

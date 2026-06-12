@@ -6,6 +6,7 @@ struct PlayerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showSettings = false
     @State private var showLyricManager = false
+    @State private var notesPack: GeneratedPack?
 
     var body: some View {
         ZStack {
@@ -35,6 +36,11 @@ struct PlayerView: View {
                 if vm.isGeneratingSubtitles {
                     ProgressView().scaleEffect(0.8)
                 } else if vm.currentItem != nil {
+                    if let pack = vm.currentNotesPack {
+                        Button(action: { notesPack = pack }) {
+                            Image(systemName: "book")
+                        }
+                    }
                     Button(action: { showLyricManager = true }) {
                         Image(systemName: vm.subtitleSource.hasLyrics ? "captions.bubble.fill" : "captions.bubble")
                     }
@@ -51,6 +57,13 @@ struct PlayerView: View {
         .sheet(isPresented: $showLyricManager) {
             LyricManagerSheet()
                 .environmentObject(vm)
+                .presentationDetents([.medium, .large])
+        }
+        .sheet(item: Binding(
+            get: { notesPack.map { NotesPackBox(pack: $0) } },
+            set: { if $0 == nil { notesPack = nil } }
+        )) { box in
+            NotesSheet(pack: box.pack)
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: Binding(
@@ -192,6 +205,12 @@ struct PlayerView: View {
         .background(Capsule().fill(Theme.chip))
     }
 
+}
+
+/// Identifiable wrapper so the learning-notes sheet can present a value type.
+private struct NotesPackBox: Identifiable {
+    let id = UUID()
+    let pack: GeneratedPack
 }
 
 #Preview {
@@ -568,6 +587,7 @@ struct LyricManagerSheet: View {
 
     private func icon(_ kind: LyricTrack.Kind) -> String {
         switch kind {
+        case .script: return "sparkles"
         case .lrc: return "doc.text"
         case .recognized: return "waveform"
         case .plainText: return "text.alignleft"

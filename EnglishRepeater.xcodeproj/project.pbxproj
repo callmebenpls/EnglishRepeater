@@ -24,6 +24,8 @@
 		B012 /* Folder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A013 /* Folder.swift */; };
 		B013 /* LyricTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A014 /* LyricTrack.swift */; };
 		B017 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A018 /* OnboardingView.swift */; };
+		B018 /* AudioGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A019 /* AudioGenerator.swift */; };
+		B019 /* GenerateAudioSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A020 /* GenerateAudioSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +48,8 @@
 		A013 /* Folder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Folder.swift; sourceTree = "<group>"; };
 		A014 /* LyricTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricTrack.swift; sourceTree = "<group>"; };
 		A018 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		A019 /* AudioGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioGenerator.swift; sourceTree = "<group>"; };
+		A020 /* GenerateAudioSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateAudioSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,6 +79,8 @@
 				A005 /* LibraryView.swift */,
 				A006 /* PlayerView.swift */,
 				A018 /* OnboardingView.swift */,
+				A019 /* AudioGenerator.swift */,
+				A020 /* GenerateAudioSheet.swift */,
 				A002 /* PlayerViewModel.swift */,
 				A003 /* SettingsView.swift */,
 				A009 /* SpeechRecognizer.swift */,
@@ -178,6 +184,8 @@
 				B005 /* LibraryView.swift in Sources */,
 				B006 /* PlayerView.swift in Sources */,
 				B017 /* OnboardingView.swift in Sources */,
+				B018 /* AudioGenerator.swift in Sources */,
+				B019 /* GenerateAudioSheet.swift in Sources */,
 				B002 /* PlayerViewModel.swift in Sources */,
 				B003 /* SettingsView.swift in Sources */,
 				B008 /* SpeechRecognizer.swift in Sources */,

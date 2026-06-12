@@ -354,6 +354,45 @@ final class PlayerViewModel: NSObject, ObservableObject {
         library.filter { $0.folderID == folderID }
     }
 
+    // MARK: - AI-generated audio
+
+    /// Register a freshly generated audio: exact-script lyric track, learning-notes sidecar,
+    /// and a library item inside the auto-created "AI 生成" folder.
+    func addGeneratedAudio(fileURL: URL, pack: GeneratedPack, segments: [Segment]) {
+        let folderName = String(localized: "AI 生成")
+        let folder = folders.first { $0.name == folderName } ?? createFolder(name: folderName)
+
+        guard let bookmark = try? fileURL.bookmarkData(options: .minimalBookmark,
+                                                       includingResourceValuesForKeys: nil, relativeTo: nil)
+        else { return }
+
+        let track = LyricTrack(name: pack.title, kind: .script, segments: Self.gapless(segments))
+        let lib = LyricLibrary(selectedID: track.id, tracks: [track])
+        if let data = try? JSONEncoder().encode(lib) {
+            try? data.write(to: lyricLibraryPath(for: fileURL))
+        }
+        if let data = try? JSONEncoder().encode(pack) {
+            try? data.write(to: Self.notesPath(for: fileURL))
+        }
+
+        let duration = segments.last.map { $0.start + $0.duration } ?? 0
+        library.insert(LibraryItem(id: UUID(), fileName: fileURL.lastPathComponent,
+                                   bookmarkData: bookmark, duration: duration, progress: 0,
+                                   dateAdded: Date(), folderID: folder.id), at: 0)
+    }
+
+    static func notesPath(for url: URL) -> URL {
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return documents.appendingPathComponent(url.deletingPathExtension().lastPathComponent + ".notes.json")
+    }
+
+    /// Learning notes for the current item, if it was AI-generated.
+    var currentNotesPack: GeneratedPack? {
+        guard let url = currentItem?.resolvedURL,
+              let data = try? Data(contentsOf: Self.notesPath(for: url)) else { return nil }
+        return try? JSONDecoder().decode(GeneratedPack.self, from: data)
+    }
+
     func selectItem(_ item: LibraryItem) {
         saveProgress()
         load(item: item)
@@ -533,6 +572,7 @@ final class PlayerViewModel: NSObject, ObservableObject {
 
     private func source(for kind: LyricTrack.Kind) -> SubtitleSource {
         switch kind {
+        case .script:    return .lrc          // exact timing, same UI treatment as LRC
         case .lrc:       return .lrc
         case .recognized: return .generated
         case .plainText: return .plainText

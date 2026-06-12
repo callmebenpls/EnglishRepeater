@@ -7,7 +7,21 @@ import Foundation
 struct AIConfig: Codable, Equatable {
     var baseURL: String = "https://api.openai.com/v1"
     var apiKey: String = ""
-    var model: String = "gpt-audio-mini"
+    var model: String = "gpt-audio-mini"        // audio-in explain model
+    var scriptModel: String = "gpt-4o-mini"     // text model writing generation scripts
+    var ttsModel: String = "gpt-4o-mini-tts"    // speech synthesis model
+
+    init() {}
+
+    // decodeIfPresent so configs saved before a field existed still decode.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        baseURL = try c.decodeIfPresent(String.self, forKey: .baseURL) ?? "https://api.openai.com/v1"
+        apiKey = try c.decodeIfPresent(String.self, forKey: .apiKey) ?? ""
+        model = try c.decodeIfPresent(String.self, forKey: .model) ?? "gpt-audio-mini"
+        scriptModel = try c.decodeIfPresent(String.self, forKey: .scriptModel) ?? "gpt-4o-mini"
+        ttsModel = try c.decodeIfPresent(String.self, forKey: .ttsModel) ?? "gpt-4o-mini-tts"
+    }
 }
 
 // MARK: - Result types
